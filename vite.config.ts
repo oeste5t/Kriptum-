@@ -12,75 +12,53 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: 'script',
+        injectRegister: 'inline',
         devOptions: {
           enabled: true,
           type: 'module'
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,json}'],
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
-          navigateFallback: 'index.html',
-          runtimeCaching: [
-            {
-              urlPattern: /^https:\/\/lh3\.googleusercontent\.com\/.*/i,
-              handler: 'CacheFirst',
-              options: {
-                cacheName: 'google-drive-icons',
-                expiration: {
-                  maxEntries: 10,
-                  maxAgeSeconds: 60 * 60 * 24 * 365
-                },
-                cacheableResponse: {
-                  statuses: [0, 200]
-                }
-              }
-            }
-          ]
+          navigateFallback: 'index.html'
         },
-        includeAssets: ['icon-192.png', 'icon-512.png', 'icon-192.svg', 'icon-512.svg'],
+        includeAssets: ['icon-192.png', 'icon-512.png'],
         manifest: {
-          id: '/',
           name: 'KRIPTUM PRO',
           short_name: 'KRIPTUM',
-          description: 'O Arsenal de Inteligência Artificial definitivo para criadores.',
+          description: 'O Arsenal de Inteligência Artificial definitivo.',
           theme_color: '#0a0a0a',
           background_color: '#0a0a0a',
           display: 'standalone',
           orientation: 'portrait',
           start_url: '/',
           scope: '/',
-          categories: ['productivity', 'education'],
           icons: [
             {
               src: 'icon-192.png',
               sizes: '192x192',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: 'icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'maskable'
             },
             {
               src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
-            }
-          ],
-          screenshots: [
-            {
-              src: 'https://picsum.photos/seed/kriptum1/1280/720',
-              sizes: '1280x720',
-              type: 'image/png',
-              form_factor: 'wide',
-              label: 'Kriptum Pro Dashboard'
+              purpose: 'any'
             },
             {
-              src: 'https://picsum.photos/seed/kriptum2/720/1280',
-              sizes: '720x1280',
+              src: 'icon-512.png',
+              sizes: '512x512',
               type: 'image/png',
-              form_factor: 'narrow',
-              label: 'Kriptum Pro Mobile'
+              purpose: 'maskable'
             }
           ]
         }
