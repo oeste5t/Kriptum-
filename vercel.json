@@ -20,7 +20,7 @@
       "headers": [
         {
           "key": "Content-Type",
-          "value": "application/json"
+          "value": "application/manifest+json"
         },
         {
           "key": "Cache-Control",
