@@ -1,0 +1,22 @@
+{
+  "short_name": "Kriptum",
+  "name": "Kriptum: Arsenal Tecnológico",
+  "icons": [
+    {
+      "src": "https://picsum.photos/seed/kriptum/192",
+      "type": "image/png",
+      "sizes": "192x192"
+    },
+    {
+      "src": "https://picsum.photos/seed/kriptum/512",
+      "type": "image/png",
+      "sizes": "512x512"
+    }
+  ],
+  "start_url": "/",
+  "background_color": "#020617",
+  "display": "standalone",
+  "scope": "/",
+  "theme_color": "#2563eb",
+  "description": "Plataforma Kriptum: Aulas, Ferramentas e Notificações em um só lugar."
+}

@@ -1,0 +1,6 @@
+{
+  "appId": "com.kriptum.app",
+  "appName": "Kriptum",
+  "webDir": "dist",
+  "bundledWebRuntime": false
+}

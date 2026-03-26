@@ -1,0 +1,5 @@
+{
+  "name": "Kriptum",
+  "description": "Kriptum: O Arsenal de Inteligência Artificial definitivo. Aulas, Ferramentas e Notificações.",
+  "requestFramePermissions": ["camera", "microphone"]
+}
