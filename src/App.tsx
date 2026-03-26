@@ -89,6 +89,13 @@ type ToolId = 'none' | 'legenda' | 'video' | 'imagem' | 'calculadora' | 'calenda
 
 // --- Componente de Logo Kriptum ---
 function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { size?: number, className?: string, rounded?: string }) {
+  const [errorCount, setErrorCount] = useState(0);
+  const [loading, setLoading] = useState(true);
+  
+  // Attempt order: PNG -> SVG -> Fallback 'K'
+  const sources = ["/icon-192.png", "/icon-192.svg"];
+  const currentSource = errorCount < sources.length ? sources[errorCount] : null;
+
   return (
     <div className={`flex items-center justify-center relative ${className}`} style={{ width: size, height: size }}>
       {/* Glow Background */}
@@ -96,12 +103,29 @@ function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { s
       
       {/* Logo Box */}
       <div className={`relative w-full h-full bg-[#141414] border border-white/10 ${rounded} flex items-center justify-center shadow-lg overflow-hidden`}>
-        <img 
-          src="/icon-192.png" 
-          alt="Logo" 
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
+        {currentSource ? (
+          <img 
+            src={currentSource} 
+            alt="Logo" 
+            className={`w-full h-full object-cover transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
+            onLoad={() => setLoading(false)}
+            onError={() => {
+              setErrorCount(prev => prev + 1);
+              setLoading(true);
+            }}
+            referrerPolicy="no-referrer"
+          />
+        ) : (
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand to-purple-600">
+            <span className="text-white font-display font-black" style={{ fontSize: size * 0.6 }}>K</span>
+          </div>
+        )}
+        
+        {loading && currentSource && (
+          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50">
+            <div className="w-1/2 h-1/2 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
+          </div>
+        )}
       </div>
     </div>
   );
@@ -234,10 +258,20 @@ export default function App() {
   }, [lowPerfMode]);
 
   const checkApiKey = async () => {
+    let hasKey = false;
+    
+    // Check for AI Studio platform key
     if (window.aistudio?.hasSelectedApiKey) {
-      const hasKey = await window.aistudio.hasSelectedApiKey();
-      setHasProKey(hasKey);
+      hasKey = await window.aistudio.hasSelectedApiKey();
     }
+    
+    // Also check for manual key in localStorage
+    const manualKey = localStorage.getItem('kriptum_manual_api_key');
+    if (manualKey && manualKey.length > 20) {
+      hasKey = true;
+    }
+    
+    setHasProKey(hasKey);
   };
 
   const handleOpenKeySelector = async () => {
@@ -283,6 +317,8 @@ export default function App() {
     localStorage.setItem('kriptum_manual_api_key', key);
     // Refresh the diagnostic check
     window.dispatchEvent(new CustomEvent('kriptum_key_updated'));
+    // Update Pro status
+    checkApiKey();
   };
 
   const handleLogout = async () => {
@@ -355,9 +391,11 @@ export default function App() {
           className="w-full space-y-8 z-10"
         >
           {/* Logo & Title */}
-          <div className="flex items-center justify-center gap-3 mb-8">
-            <KriptumLogo size={48} />
-            <h1 className="text-2xl font-display font-bold text-white tracking-tight">KRIPTUM<span className="font-normal">PRO</span></h1>
+          <div className="flex flex-col items-center justify-center gap-4 mb-8">
+            <KriptumLogo size={80} rounded="rounded-3xl" />
+            <h1 className="text-3xl font-display font-bold text-white tracking-tight">
+              KRIPTUM<span className="font-normal text-slate-400">PRO</span>
+            </h1>
           </div>
 
           <div className="text-center space-y-2 mb-8">
@@ -906,10 +944,16 @@ function AdminCommandCenter({ onSend }: { onSend: (t: string, d: string, ty: str
   );
 }
 
-function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onLogout, deferredPrompt, onInstall }: any) {
+function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onOpenKeySelector, onLogout, deferredPrompt, onInstall }: any) {
   const [systemStatus, setSystemStatus] = useState<{ apiKeyConfigured: boolean, apiKeyLength: number } | null>(null);
   const [tempKey, setTempKey] = useState(manualApiKey);
   const [showKeyInput, setShowKeyInput] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+
+  // Sync tempKey when manualApiKey changes (e.g. loaded from localStorage)
+  useEffect(() => {
+    setTempKey(manualApiKey);
+  }, [manualApiKey]);
 
   const checkStatus = async () => {
     if (userRole !== 'admin') return;
@@ -930,12 +974,27 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onLogout,
 
   useEffect(() => {
     checkStatus();
+    
+    // Listen for key updates from other parts of the app
+    const handleUpdate = () => checkStatus();
+    window.addEventListener('kriptum_key_updated', handleUpdate);
+    return () => window.removeEventListener('kriptum_key_updated', handleUpdate);
   }, [userRole]);
 
-  const handleSave = () => {
-    onSaveManualKey(tempKey);
-    setShowKeyInput(false);
-    setTimeout(checkStatus, 500);
+  const handleSave = async () => {
+    if (!tempKey || tempKey.trim().length < 20) {
+      alert("Por favor, insira uma chave Gemini API válida.");
+      return;
+    }
+    
+    setIsSaving(true);
+    try {
+      await onSaveManualKey(tempKey.trim());
+      setShowKeyInput(false);
+      setTimeout(checkStatus, 500);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   return (
@@ -983,20 +1042,37 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onLogout,
             </div>
 
             {showKeyInput && (
-              <div className="p-4 bg-[#0a0a0a] rounded-xl border border-white/5 space-y-3">
-                <input 
-                  type="password"
-                  value={tempKey}
-                  onChange={(e) => setTempKey(e.target.value)}
-                  placeholder="Cole sua Chave Gemini API"
-                  className="w-full p-3 bg-[#141414] border border-white/5 text-white rounded-xl text-xs font-mono outline-none focus:border-brand transition-all"
-                />
-                <button 
-                  onClick={handleSave}
-                  className="w-full gradient-primary text-white p-3 rounded-xl font-display font-bold text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-all"
-                >
-                  Salvar Chave
-                </button>
+              <div className="p-4 bg-[#0a0a0a] rounded-xl border border-white/5 space-y-4">
+                <div className="space-y-2">
+                  <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Configuração Manual</label>
+                  <input 
+                    type="password"
+                    value={tempKey}
+                    onChange={(e) => setTempKey(e.target.value)}
+                    placeholder="Cole sua Chave Gemini API"
+                    className="w-full p-3 bg-[#141414] border border-white/5 text-white rounded-xl text-xs font-mono outline-none focus:border-brand transition-all"
+                  />
+                  <button 
+                    onClick={handleSave}
+                    disabled={isSaving}
+                    className="w-full gradient-primary text-white p-3 rounded-xl font-display font-bold text-xs uppercase tracking-wider shadow-lg active:scale-95 transition-all disabled:opacity-50"
+                  >
+                    {isSaving ? 'Salvando...' : 'Salvar Chave'}
+                  </button>
+                </div>
+
+                {window.aistudio?.openSelectKey && (
+                  <div className="pt-4 border-t border-white/5 space-y-2">
+                    <label className="text-[10px] font-bold text-slate-500 uppercase tracking-widest">Opção AI Studio</label>
+                    <button 
+                      onClick={onOpenKeySelector}
+                      className="w-full bg-brand/10 text-brand border border-brand/20 p-3 rounded-xl font-display font-bold text-xs uppercase tracking-wider active:scale-95 transition-all"
+                    >
+                      Usar Chave do AI Studio
+                    </button>
+                    <p className="text-[9px] text-slate-600 text-center italic">Recomendado se estiver usando o ambiente oficial.</p>
+                  </div>
+                )}
               </div>
             )}
 
