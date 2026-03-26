@@ -1,4 +1,4 @@
-const CACHE_NAME = "kriptum-v3";
+const CACHE_NAME = "kriptum-v4";
 const ASSETS = [
   "/",
   "/manifest.json",

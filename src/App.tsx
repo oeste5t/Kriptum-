@@ -95,10 +95,13 @@ function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { s
       <div className="absolute inset-0 bg-gradient-to-tr from-[#f472b6] to-[#c084fc] blur-xl animate-pulse opacity-50" />
       
       {/* Logo Box */}
-      <div className={`relative w-full h-full bg-gradient-to-tr from-[#f472b6] to-[#c084fc] ${rounded} flex items-center justify-center shadow-lg`}>
-        <div className="w-1/2 h-1/2 bg-[#0a0a0a] rounded-full flex items-center justify-center">
-          <span className="text-white font-display font-black leading-none" style={{ fontSize: size / 2 }}>K</span>
-        </div>
+      <div className={`relative w-full h-full bg-[#141414] border border-white/10 ${rounded} flex items-center justify-center shadow-lg overflow-hidden`}>
+        <img 
+          src="/icon-192.png" 
+          alt="Logo" 
+          className="w-full h-full object-cover"
+          referrerPolicy="no-referrer"
+        />
       </div>
     </div>
   );
@@ -468,6 +471,7 @@ export default function App() {
           </button>
           
           <div className="flex items-center gap-2">
+            <KriptumLogo size={28} rounded="rounded-lg" />
             <h1 className="text-xl font-display font-bold tracking-tight text-white">
               KRIPTUM<span className="font-normal">PRO</span>
             </h1>
@@ -635,6 +639,15 @@ export default function App() {
 function HomeView({ user, notificationsCount, onSelectTab, deferredPrompt, onInstall }: { user: any, notificationsCount: number, onSelectTab: (tab: Tab) => void, deferredPrompt: any, onInstall: () => void }) {
   return (
     <div className="space-y-8">
+      {/* Welcome Section with Logo */}
+      <div className="flex flex-col items-center text-center space-y-4 py-4">
+        <KriptumLogo size={80} rounded="rounded-3xl" />
+        <div className="space-y-1">
+          <h2 className="text-2xl font-display font-bold text-white tracking-tight">Olá, {user?.displayName?.split(' ')[0] || 'Criador'}!</h2>
+          <p className="text-slate-400 text-sm font-medium">Seu arsenal de elite está pronto.</p>
+        </div>
+      </div>
+
       {/* Search Bar */}
       <div className="relative">
         <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500" size={20} />
@@ -745,7 +758,10 @@ function ToolsView({ onSelectTool }: { onSelectTool: (id: ToolId) => void }) {
 
   return (
     <div className="space-y-6">
-      <h3 className="font-display font-bold text-lg text-white">Ferramentas</h3>
+      <div className="flex items-center gap-3">
+        <KriptumLogo size={32} rounded="rounded-xl" />
+        <h3 className="font-display font-bold text-lg text-white">Ferramentas</h3>
+      </div>
       <div className="grid grid-cols-2 gap-4">
           {tools.map((tool, i) => {
             const Icon = tool.icon as any;
@@ -845,9 +861,12 @@ function AdminCommandCenter({ onSend }: { onSend: (t: string, d: string, ty: str
 
   return (
     <div className="bg-brand/5 p-6 rounded-2xl border border-brand/20 space-y-4">
-      <div className="flex items-center gap-2 text-brand">
-        <Cpu size={18} />
-        <h3 className="font-display font-bold text-sm uppercase tracking-wider">Painel Admin</h3>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-2 text-brand">
+          <Cpu size={18} />
+          <h3 className="font-display font-bold text-sm uppercase tracking-wider">Painel Admin</h3>
+        </div>
+        <KriptumLogo size={24} rounded="rounded-lg" />
       </div>
       
       <form onSubmit={handleSubmit} className="space-y-4">
@@ -921,7 +940,10 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onLogout,
 
   return (
     <div className="space-y-6">
-      <h3 className="font-display font-bold text-lg text-white">Perfil</h3>
+      <div className="flex items-center justify-between">
+        <h3 className="font-display font-bold text-lg text-white">Perfil</h3>
+        <KriptumLogo size={32} rounded="rounded-xl" />
+      </div>
       
       <div className="bg-[#141414] rounded-2xl p-6 border border-white/5 space-y-6">
         {/* User Profile */}

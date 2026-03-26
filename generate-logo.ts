@@ -1,25 +1,46 @@
 import { GoogleGenAI } from "@google/genai";
+import fs from "fs";
+import path from "path";
 
-async function generateLogo() {
+async function generateAndSaveLogo() {
   const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+  
+  console.log("Gerando logo baseada na imagem do usuário...");
+  
   const response = await ai.models.generateContent({
     model: 'gemini-2.5-flash-image',
     contents: {
       parts: [
         {
-          text: "A professional, minimalist, futuristic tech logo for a brand named 'Kriptum'. Sleek 'K' symbol, high-tech arsenal aesthetic, dark blue and neon cyan accents, 512x512, centered, high quality.",
+          text: "A high-quality, professional tech logo. A sharp, futuristic white 'K' symbol that looks like a lightning bolt or a blade. The 'K' is centered on a solid black background. To the right of the 'K', there is a subtle but intense blue lens flare or glow effect. Below the 'K', the word 'KRIPTUM' is written in a bold, wide, futuristic sans-serif white font. 512x512, centered, minimalist, high resolution.",
         },
       ],
     },
   });
 
+  let base64Data = null;
   for (const part of response.candidates[0].content.parts) {
     if (part.inlineData) {
-      return part.inlineData.data;
+      base64Data = part.inlineData.data;
+      break;
     }
   }
-  return null;
+
+  if (base64Data) {
+    const buffer = Buffer.from(base64Data, 'base64');
+    const publicDir = path.join(process.cwd(), 'public');
+    
+    if (!fs.existsSync(publicDir)) {
+      fs.mkdirSync(publicDir);
+    }
+
+    fs.writeFileSync(path.join(publicDir, 'icon-192.png'), buffer);
+    fs.writeFileSync(path.join(publicDir, 'icon-512.png'), buffer);
+    
+    console.log("Logos geradas e salvas em /public/icon-192.png e /public/icon-512.png");
+  } else {
+    console.error("Falha ao gerar a logo.");
+  }
 }
 
-// This is a script to be run once to generate the logo
-// In a real scenario, I'd just do this and save the file.
+generateAndSaveLogo();
