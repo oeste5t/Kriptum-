@@ -26,7 +26,7 @@ const ALL_LESSONS: Lesson[] = [
   {
     id: 'welcome',
     title: 'Aula 1: O Início da Jornada',
-    description: 'Seja bem-vindo ao INFLUENCER PRO. O jogo mudou e agora você tem as ferramentas certas para chegar no topo.',
+    description: 'Seja bem-vindo ao KRIPTUM PRO. O jogo mudou e agora você tem as ferramentas certas para chegar no topo.',
     duration: '00:41',
     videoUrl: 'https://youtube.com/shorts/tbDcWAHBpkM',
     thumbnail: 'https://img.youtube.com/vi/tbDcWAHBpkM/maxresdefault.jpg',
@@ -38,7 +38,7 @@ const ALL_LESSONS: Lesson[] = [
     title: 'Estratégias de Engajamento',
     description: 'Aprenda a prender a atenção do seu público.',
     duration: '45:00',
-    thumbnail: 'https://picsum.photos/seed/influencer-engage/400/225',
+    thumbnail: 'https://picsum.photos/seed/kriptum-engage/400/225',
     isLocked: true,
     isCompleted: false
   },
@@ -47,7 +47,7 @@ const ALL_LESSONS: Lesson[] = [
     title: 'Monetização Avançada',
     description: 'Transforme seguidores em clientes reais.',
     duration: '30:00',
-    thumbnail: 'https://picsum.photos/seed/influencer-money/400/225',
+    thumbnail: 'https://picsum.photos/seed/kriptum-money/400/225',
     isLocked: true,
     isCompleted: false
   },
@@ -56,7 +56,7 @@ const ALL_LESSONS: Lesson[] = [
     title: 'Criação de Conteúdo Viral',
     description: 'Os segredos por trás dos vídeos que explodem.',
     duration: '60:00',
-    thumbnail: 'https://picsum.photos/seed/influencer-viral/400/225',
+    thumbnail: 'https://picsum.photos/seed/kriptum-viral/400/225',
     isLocked: true,
     isCompleted: false
   }

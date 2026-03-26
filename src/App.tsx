@@ -38,7 +38,8 @@ import {
   Download,
   AlertTriangle,
   X,
-  Mail
+  Mail,
+  Info
 } from 'lucide-react';
 import { ErrorBoundary } from './components/ErrorBoundary';
 import { CaptionGenerator } from './components/CaptionGenerator';
@@ -86,8 +87,8 @@ declare global {
 type Tab = 'inicio' | 'aulas' | 'ferramentas' | 'clips' | 'configuracoes' | 'notificacoes';
 type ToolId = 'none' | 'legenda' | 'video' | 'imagem' | 'calculadora' | 'calendario' | 'notas';
 
-// --- Componente de Logo Curator ---
-function CuratorLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { size?: number, className?: string, rounded?: string }) {
+// --- Componente de Logo Kriptum ---
+function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { size?: number, className?: string, rounded?: string }) {
   return (
     <div className={`flex items-center justify-center relative ${className}`} style={{ width: size, height: size }}>
       {/* Glow Background */}
@@ -352,7 +353,7 @@ export default function App() {
         >
           {/* Logo & Title */}
           <div className="flex items-center justify-center gap-3 mb-8">
-            <CuratorLogo size={48} />
+            <KriptumLogo size={48} />
             <h1 className="text-2xl font-display font-bold text-white tracking-tight">KRIPTUM<span className="font-normal">PRO</span></h1>
           </div>
 
@@ -990,7 +991,7 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onLogout,
         )}
 
         {/* PWA Support */}
-        {deferredPrompt && (
+        {deferredPrompt ? (
           <div className="pt-6 border-t border-white/5 space-y-4">
             <div className="flex items-center gap-2 text-brand">
               <Download size={16} />
@@ -1003,6 +1004,21 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onLogout,
             >
               Instalar Agora
             </button>
+          </div>
+        ) : (
+          <div className="pt-6 border-t border-white/5 space-y-4">
+             <div className="flex items-center gap-2 text-slate-400">
+              <Info size={16} />
+              <h4 className="text-xs font-bold uppercase tracking-wider">Como Instalar</h4>
+            </div>
+            <div className="p-4 bg-[#0a0a0a] rounded-xl border border-white/5 space-y-3">
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                Para instalar no <span className="text-white font-bold">iOS (iPhone)</span>, toque no ícone de <span className="text-brand font-bold">Compartilhar</span> no Safari e selecione <span className="text-white font-bold">"Adicionar à Tela de Início"</span>.
+              </p>
+              <p className="text-[11px] text-slate-400 leading-relaxed">
+                No <span className="text-white font-bold">Android</span>, se o botão não aparecer, toque nos <span className="text-brand font-bold">três pontos</span> do Chrome e selecione <span className="text-white font-bold">"Instalar Aplicativo"</span>.
+              </p>
+            </div>
           </div>
         )}
 
@@ -1018,7 +1034,7 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onLogout,
       </div>
 
       <div className="text-center opacity-30">
-        <p className="text-[10px] font-bold uppercase tracking-widest">INFLUENCER PRO v1.0.2</p>
+        <p className="text-[10px] font-bold uppercase tracking-widest">KRIPTUM PRO v1.0.2</p>
       </div>
     </div>
   );

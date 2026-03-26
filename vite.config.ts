@@ -12,13 +12,16 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        injectRegister: 'inline',
+        injectRegister: 'script',
         devOptions: {
           enabled: true,
           type: 'module'
         },
         workbox: {
-          globPatterns: ['**/*.{js,css,html,ico,png,svg}'],
+          globPatterns: ['**/*.{js,css,html,ico,png,svg,webmanifest}'],
+          cleanupOutdatedCaches: true,
+          clientsClaim: true,
+          skipWaiting: true,
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/lh3\.googleusercontent\.com\/.*/i,
@@ -36,12 +39,12 @@ export default defineConfig(({mode}) => {
             }
           ]
         },
-        includeAssets: ['icon-192.png', 'icon-512.png'],
+        includeAssets: ['icon-192.png', 'icon-512.png', 'icon-192.svg', 'icon-512.svg'],
         manifest: {
           id: '/',
-          name: 'INFLUENCER PRO',
-          short_name: 'INFLUENCER',
-          description: 'Plataforma para Criadores',
+          name: 'KRIPTUM PRO',
+          short_name: 'KRIPTUM',
+          description: 'O Arsenal de Inteligência Artificial definitivo.',
           theme_color: '#0a0a0a',
           background_color: '#0a0a0a',
           display: 'standalone',
@@ -50,16 +53,28 @@ export default defineConfig(({mode}) => {
           scope: '/',
           icons: [
             {
-              src: '/icon-192.png',
+              src: 'icon-192.png',
               sizes: '192x192',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
             },
             {
-              src: '/icon-512.png',
+              src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any maskable'
+              purpose: 'any'
+            },
+            {
+              src: 'icon-192.png',
+              sizes: '192x192',
+              type: 'image/png',
+              purpose: 'maskable'
+            },
+            {
+              src: 'icon-512.png',
+              sizes: '512x512',
+              type: 'image/png',
+              purpose: 'maskable'
             }
           ]
         }

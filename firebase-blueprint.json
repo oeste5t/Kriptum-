@@ -1,31 +1,68 @@
 {
   "entities": {
     "User": {
-      "title": "User Profile",
-      "description": "Stores user information and their role within the Kriptum Arsenal.",
+      "title": "User",
+      "description": "User profile information",
       "type": "object",
       "properties": {
-        "uid": { "type": "string", "description": "Unique identifier from Firebase Auth" },
-        "displayName": { "type": "string", "description": "User's full name" },
-        "email": { "type": "string", "format": "email", "description": "User's email address" },
-        "photoURL": { "type": "string", "description": "URL to the user's profile picture" },
-        "isPro": { "type": "boolean", "description": "Whether the user has paid for full access" },
-        "role": { "type": "string", "enum": ["admin", "user"], "description": "Access level of the user" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "Timestamp when the user first logged in" }
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID"
+        },
+        "displayName": {
+          "type": "string",
+          "description": "User's display name"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "User's email address"
+        },
+        "photoURL": {
+          "type": "string",
+          "format": "uri",
+          "description": "Profile picture URL"
+        },
+        "role": {
+          "type": "string",
+          "enum": ["admin", "user"],
+          "description": "User's access role"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the user profile was created"
+        }
       },
       "required": ["uid", "email", "role"]
     },
     "Notification": {
-      "title": "Arsenal Notification",
-      "description": "Real-time updates sent from the command center to all agents.",
+      "title": "Notification",
+      "description": "System notifications and alerts",
       "type": "object",
       "properties": {
-        "id": { "type": "string" },
-        "title": { "type": "string", "description": "Headline of the update" },
-        "description": { "type": "string", "description": "Detailed message" },
-        "type": { "type": "string", "enum": ["info", "alert", "update"], "description": "Category of the notification" },
-        "authorName": { "type": "string", "description": "Name of the agent who sent the update" },
-        "createdAt": { "type": "string", "format": "date-time", "description": "When the update was issued" }
+        "title": {
+          "type": "string",
+          "description": "Notification title"
+        },
+        "description": {
+          "type": "string",
+          "description": "Notification message"
+        },
+        "type": {
+          "type": "string",
+          "enum": ["info", "alert", "update"],
+          "description": "Type of notification"
+        },
+        "authorName": {
+          "type": "string",
+          "description": "Name of the admin who sent the notification"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "When the notification was sent"
+        }
       },
       "required": ["title", "description", "type", "createdAt"]
     }
@@ -33,11 +70,11 @@
   "firestore": {
     "/users/{userId}": {
       "schema": "User",
-      "description": "Collection of user profile documents indexed by their Firebase Auth UID."
+      "description": "User profiles collection"
     },
     "/notifications/{notificationId}": {
       "schema": "Notification",
-      "description": "Global feed of updates visible to all authenticated agents."
+      "description": "System notifications collection"
     }
   }
 }
