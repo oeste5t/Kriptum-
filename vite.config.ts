@@ -22,6 +22,7 @@ export default defineConfig(({mode}) => {
           cleanupOutdatedCaches: true,
           clientsClaim: true,
           skipWaiting: true,
+          navigateFallback: 'index.html',
           runtimeCaching: [
             {
               urlPattern: /^https:\/\/lh3\.googleusercontent\.com\/.*/i,
@@ -44,37 +45,42 @@ export default defineConfig(({mode}) => {
           id: '/',
           name: 'KRIPTUM PRO',
           short_name: 'KRIPTUM',
-          description: 'O Arsenal de Inteligência Artificial definitivo.',
+          description: 'O Arsenal de Inteligência Artificial definitivo para criadores.',
           theme_color: '#0a0a0a',
           background_color: '#0a0a0a',
           display: 'standalone',
           orientation: 'portrait',
           start_url: '/',
           scope: '/',
+          categories: ['productivity', 'education'],
           icons: [
             {
               src: 'icon-192.png',
               sizes: '192x192',
               type: 'image/png',
-              purpose: 'any'
+              purpose: 'any maskable'
             },
             {
               src: 'icon-512.png',
               sizes: '512x512',
               type: 'image/png',
-              purpose: 'any'
+              purpose: 'any maskable'
+            }
+          ],
+          screenshots: [
+            {
+              src: 'https://picsum.photos/seed/kriptum1/1280/720',
+              sizes: '1280x720',
+              type: 'image/png',
+              form_factor: 'wide',
+              label: 'Kriptum Pro Dashboard'
             },
             {
-              src: 'icon-192.png',
-              sizes: '192x192',
+              src: 'https://picsum.photos/seed/kriptum2/720/1280',
+              sizes: '720x1280',
               type: 'image/png',
-              purpose: 'maskable'
-            },
-            {
-              src: 'icon-512.png',
-              sizes: '512x512',
-              type: 'image/png',
-              purpose: 'maskable'
+              form_factor: 'narrow',
+              label: 'Kriptum Pro Mobile'
             }
           ]
         }
