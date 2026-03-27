@@ -4,18 +4,34 @@ import path from "path";
 import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import admin from "firebase-admin";
+import { getFirestore } from "firebase-admin/firestore";
 import { GoogleGenAI } from "@google/genai";
+import fs from "fs";
 
 dotenv.config();
 
+// Load Firebase Config to get database ID
+let firebaseConfig: any = {};
+try {
+  firebaseConfig = JSON.parse(fs.readFileSync(path.join(process.cwd(), "firebase-applet-config.json"), "utf-8"));
+} catch (error) {
+  console.error("Erro ao carregar firebase-applet-config.json:", error);
+}
+
 // Initialize Firebase Admin
 if (!admin.apps.length) {
+  const projectId = process.env.PROJECT_ID || firebaseConfig.projectId || "gen-lang-client-0266664207";
+  console.log(`[Firebase Admin] Inicializando com Project ID: ${projectId}`);
   admin.initializeApp({
-    projectId: process.env.PROJECT_ID || "gen-lang-client-0266664207",
+    projectId: projectId,
   });
 }
 
-const dbAdmin = admin.firestore();
+const dbAdmin = firebaseConfig.firestoreDatabaseId 
+  ? getFirestore(admin.app(), firebaseConfig.firestoreDatabaseId)
+  : getFirestore(admin.app());
+
+console.log(`[Firebase Admin] Firestore inicializado no banco: ${firebaseConfig.firestoreDatabaseId || "(default)"}`);
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);

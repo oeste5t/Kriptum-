@@ -46,6 +46,7 @@ import { CaptionGenerator } from './components/CaptionGenerator';
 import { VideoGenerator } from './components/VideoGenerator';
 import { ImageGenerator } from './components/ImageGenerator';
 import { Lessons } from './components/Lessons';
+import { ALL_LESSONS } from './constants';
 import { 
   auth, 
   googleProvider, 
@@ -143,7 +144,6 @@ export default function App() {
   useEffect(() => {
     const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
       if (currentUser) {
-        // Create or update user profile in Firestore
         try {
           const userRef = doc(db, 'users', currentUser.uid);
           const userSnap = await getDoc(userRef);
@@ -162,7 +162,6 @@ export default function App() {
           } else {
             const currentRole = userSnap.data().role;
             if (currentUser.email === 'perigoreal00@gmail.com' && currentRole !== 'admin') {
-              // Force admin role for the owner
               await setDoc(userRef, { role: 'admin' }, { merge: true });
               setUserRole('admin');
             } else {
@@ -175,6 +174,7 @@ export default function App() {
         setUser(currentUser);
       } else {
         setUser(null);
+        setUserRole('user');
       }
       setIsAuthReady(true);
     });
@@ -693,22 +693,22 @@ function HomeView({ user, notificationsCount, onSelectTab, deferredPrompt, onIns
         </div>
         
         <div className="flex gap-4 overflow-x-auto pb-4 snap-x [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="min-w-[240px] snap-center bg-[#141414] rounded-2xl border border-white/5 overflow-hidden group cursor-pointer" onClick={() => onSelectTab('aulas')}>
+          {ALL_LESSONS.map((lesson) => (
+            <div key={lesson.id} className="min-w-[240px] snap-center bg-[#141414] rounded-2xl border border-white/5 overflow-hidden group cursor-pointer" onClick={() => onSelectTab('aulas')}>
               <div className="h-32 bg-slate-800 relative overflow-hidden">
-                <img src={`https://picsum.photos/seed/aula${i}/400/200`} alt={`Aula ${i}`} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" referrerPolicy="no-referrer" />
+                <img src={lesson.thumbnail} alt={lesson.title} className="absolute inset-0 w-full h-full object-cover opacity-60 group-hover:opacity-80 transition-opacity" referrerPolicy="no-referrer" />
                 <div className="absolute inset-0 flex items-center justify-center">
                   <div className="w-10 h-10 rounded-full bg-black/50 backdrop-blur-sm flex items-center justify-center border border-white/10 group-hover:scale-110 transition-transform">
                     <Play size={16} className="text-white ml-1" fill="currentColor" />
                   </div>
                 </div>
                 <div className="absolute bottom-2 right-2 bg-black/70 px-2 py-1 rounded text-[10px] font-medium text-white backdrop-blur-md">
-                  12:45
+                  {lesson.duration}
                 </div>
               </div>
               <div className="p-4">
-                <h4 className="font-display font-bold text-sm text-white mb-1">Como viralizar no Reels</h4>
-                <p className="text-xs text-slate-500">Módulo {i} • Aula {i}</p>
+                <h4 className="font-display font-bold text-sm text-white mb-1 truncate">{lesson.title}</h4>
+                <p className="text-xs text-slate-500 truncate">{lesson.description}</p>
               </div>
             </div>
           ))}

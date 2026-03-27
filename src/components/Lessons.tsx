@@ -11,56 +11,7 @@ import {
   Lock
 } from 'lucide-react';
 
-interface Lesson {
-  id: string;
-  title: string;
-  description: string;
-  duration: string;
-  videoUrl?: string;
-  thumbnail?: string;
-  isLocked?: boolean;
-  isCompleted?: boolean;
-}
-
-const ALL_LESSONS: Lesson[] = [
-  {
-    id: 'welcome',
-    title: 'Aula 1: O Início da Jornada',
-    description: 'Seja bem-vindo ao KRIPTUM PRO. O jogo mudou e agora você tem as ferramentas certas para chegar no topo.',
-    duration: '00:41',
-    videoUrl: 'https://youtube.com/shorts/tbDcWAHBpkM',
-    thumbnail: 'https://img.youtube.com/vi/tbDcWAHBpkM/maxresdefault.jpg',
-    isLocked: false,
-    isCompleted: false
-  },
-  {
-    id: 'crypto-adv',
-    title: 'Estratégias de Engajamento',
-    description: 'Aprenda a prender a atenção do seu público.',
-    duration: '45:00',
-    thumbnail: 'https://picsum.photos/seed/kriptum-engage/400/225',
-    isLocked: true,
-    isCompleted: false
-  },
-  {
-    id: 'elite-networks',
-    title: 'Monetização Avançada',
-    description: 'Transforme seguidores em clientes reais.',
-    duration: '30:00',
-    thumbnail: 'https://picsum.photos/seed/kriptum-money/400/225',
-    isLocked: true,
-    isCompleted: false
-  },
-  {
-    id: 'agile-dev',
-    title: 'Criação de Conteúdo Viral',
-    description: 'Os segredos por trás dos vídeos que explodem.',
-    duration: '60:00',
-    thumbnail: 'https://picsum.photos/seed/kriptum-viral/400/225',
-    isLocked: true,
-    isCompleted: false
-  }
-];
+import { Lesson, ALL_LESSONS } from '../constants';
 
 export function Lessons() {
   const [searchQuery, setSearchQuery] = useState('');
