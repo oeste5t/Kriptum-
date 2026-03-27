@@ -90,7 +90,6 @@ type ToolId = 'none' | 'legenda' | 'video' | 'imagem' | 'calculadora' | 'calenda
 // --- Componente de Logo Kriptum ---
 function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { size?: number, className?: string, rounded?: string }) {
   const [errorCount, setErrorCount] = useState(0);
-  const [loading, setLoading] = useState(true);
   
   // Attempt order: PNG -> SVG -> Fallback 'K'
   const sources = ["/icon-192.png", "/icon-192.svg"];
@@ -105,25 +104,19 @@ function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { s
       <div className={`relative w-full h-full bg-[#141414] border border-white/10 ${rounded} flex items-center justify-center shadow-lg overflow-hidden`}>
         {currentSource ? (
           <img 
+            key={currentSource}
             src={currentSource} 
             alt="Logo" 
-            className={`w-full h-full object-cover transition-opacity duration-300 ${loading ? 'opacity-0' : 'opacity-100'}`}
-            onLoad={() => setLoading(false)}
+            className="w-full h-full object-cover"
             onError={() => {
+              console.log(`Logo failed to load: ${currentSource}`);
               setErrorCount(prev => prev + 1);
-              setLoading(true);
             }}
             referrerPolicy="no-referrer"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-brand to-purple-600">
+          <div className="w-full h-full flex items-center justify-center bg-gradient-to-br from-[#d946ef] to-purple-600">
             <span className="text-white font-display font-black" style={{ fontSize: size * 0.6 }}>K</span>
-          </div>
-        )}
-        
-        {loading && currentSource && (
-          <div className="absolute inset-0 flex items-center justify-center bg-slate-900/50">
-            <div className="w-1/2 h-1/2 rounded-full border-2 border-brand/30 border-t-brand animate-spin" />
           </div>
         )}
       </div>
