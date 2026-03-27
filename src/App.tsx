@@ -97,9 +97,6 @@ function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { s
 
   return (
     <div className={`flex items-center justify-center relative ${className}`} style={{ width: size, height: size }}>
-      {/* Glow Background */}
-      <div className="absolute inset-0 bg-gradient-to-tr from-[#f472b6] to-[#c084fc] blur-xl animate-pulse opacity-50" />
-      
       {/* Logo Box */}
       <div className={`relative w-full h-full bg-[#141414] border border-white/10 ${rounded} flex items-center justify-center shadow-lg overflow-hidden`}>
         {currentSource ? (
@@ -502,7 +499,6 @@ export default function App() {
           </button>
           
           <div className="flex items-center gap-2">
-            <KriptumLogo size={28} rounded="rounded-lg" />
             <h1 className="text-xl font-display font-bold tracking-tight text-white">
               KRIPTUM<span className="font-normal">PRO</span>
             </h1>
@@ -994,7 +990,6 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onOpenKey
     <div className="space-y-6">
       <div className="flex items-center justify-between">
         <h3 className="font-display font-bold text-lg text-white">Perfil</h3>
-        <KriptumLogo size={32} rounded="rounded-xl" />
       </div>
       
       <div className="bg-[#141414] rounded-2xl p-6 border border-white/5 space-y-6">
