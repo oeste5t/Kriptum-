@@ -5,7 +5,6 @@ import { fileURLToPath } from "url";
 import dotenv from "dotenv";
 import admin from "firebase-admin";
 import { getFirestore } from "firebase-admin/firestore";
-import { GoogleGenAI } from "@google/genai";
 import fs from "fs";
 
 dotenv.config();
@@ -53,70 +52,12 @@ async function startServer() {
 
   // Endpoint de Diagnóstico
   app.get(["/api/system/status", "/api/system/status/"], (req, res) => {
-    const clientKey = req.headers['x-gemini-key'] as string;
-    const apiKey = clientKey || process.env.API_KEY || process.env.GEMINI_API_KEY;
+    const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
     res.json({
       status: "online",
       apiKeyConfigured: !!apiKey,
-      apiKeyLength: apiKey ? apiKey.length : 0,
       environment: process.env.NODE_ENV || "development"
     });
-  });
-
-  // Rota Unificada de Geração (Conforme solicitação técnica)
-  app.post(["/api/generate", "/api/generate/"], async (req, res) => {
-    try {
-      const { prompt, systemInstruction, image, userPrompt, responseSchema } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-
-      if (!apiKey) {
-        console.error("[Server] Erro: GEMINI_API_KEY não configurada.");
-        return res.status(500).json({ error: "GEMINI_API_KEY não configurada no servidor." });
-      }
-
-      console.log(`[Server] Iniciando geração com modelo: gemini-1.5-flash`);
-      const ai = new GoogleGenAI({ apiKey });
-      
-      let contents;
-      if (image) {
-        contents = [
-          { 
-            role: "user",
-            parts: [
-              { inlineData: { mimeType: "image/jpeg", data: image } },
-              { text: userPrompt || prompt }
-            ] 
-          }
-        ];
-      } else {
-        contents = [{ parts: [{ text: prompt }] }];
-      }
-
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents,
-        config: {
-          systemInstruction: systemInstruction,
-          temperature: 0.7,
-          responseMimeType: (image || responseSchema) ? "application/json" : undefined,
-        }
-      });
-
-      if (!response.text) {
-        throw new Error("Resposta vazia da IA.");
-      }
-
-      res.status(200).json({ text: response.text });
-    } catch (error: any) {
-      console.error("Erro na geração unificada:", error);
-      res.status(500).json({ error: error.message || "Erro interno na geração." });
-    }
-  });
-
-  // Catch-all para rotas de API não encontradas
-  app.all("/api/*", (req, res) => {
-    console.warn(`[Server] Rota de API não encontrada: ${req.method} ${req.url}`);
-    res.status(404).json({ error: `Rota de API não encontrada: ${req.method} ${req.url}` });
   });
 
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {

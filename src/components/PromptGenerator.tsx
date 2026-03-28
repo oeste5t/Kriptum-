@@ -15,6 +15,7 @@ import {
   Zap,
   AlertTriangle
 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 const PromptGenerator = () => {
   const [characters, setCharacters] = useState<any[]>([]);
@@ -36,37 +37,26 @@ const PromptGenerator = () => {
 
   const [error, setError] = useState<string | null>(null);
 
-  // Função de chamada à API usando SDK no Backend
+  // Função de chamada à IA no Frontend
   const callGemini = async (prompt: string, systemInstruction: string, responseSchema?: any) => {
     setError(null);
     try {
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          prompt,
-          systemInstruction,
-          responseSchema
-        })
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-flash-latest",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction: systemInstruction,
+          temperature: 0.7,
+          responseMimeType: responseSchema ? "application/json" : undefined,
+          responseSchema: responseSchema
+        }
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Resposta não-JSON recebida:", text);
-        throw new Error(`O servidor retornou uma resposta inesperada (HTML). Verifique se o servidor está rodando corretamente.`);
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro na resposta do servidor.");
-      }
-
-      const result = await response.json();
-      const responseText = result.text;
+      const responseText = response.text;
 
       if (!responseText) {
-        throw new Error("A IA não retornou uma resposta válida. Verifique sua chave API.");
+        throw new Error("A IA não retornou uma resposta válida. Verifique sua conexão.");
       }
 
       const rawText = responseText.trim();

@@ -12,6 +12,7 @@ import {
   Copy,
   Trash2
 } from 'lucide-react';
+import { GoogleGenAI } from "@google/genai";
 
 interface CaptionGeneratorProps {
 }
@@ -219,32 +220,28 @@ export function CaptionGenerator({ }: CaptionGeneratorProps) {
         "hashtags": "string"
       }`;
 
-      addLog(`Enviando para o servidor...`);
+      addLog(`Enviando para o Gemini (Frontend)...`);
       
-      const response = await fetch('/api/generate', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          image: base64Image,
+      const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
+      const response = await ai.models.generateContent({
+        model: "gemini-flash-latest",
+        contents: [
+          {
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: "image/jpeg", data: base64Image } },
+              { text: "Analise este frame do vídeo e gere a legenda de elite em JSON seguindo as instruções do sistema." }
+            ]
+          }
+        ],
+        config: {
           systemInstruction: systemPrompt,
-          userPrompt: "Analise este frame do vídeo e gere a legenda de elite em JSON seguindo as instruções do sistema."
-        })
+          temperature: 0.7,
+          responseMimeType: "application/json",
+        }
       });
 
-      const contentType = response.headers.get("content-type");
-      if (!contentType || !contentType.includes("application/json")) {
-        const text = await response.text();
-        console.error("Resposta não-JSON recebida:", text);
-        throw new Error(`O servidor retornou uma resposta inesperada (HTML). Verifique se o servidor está rodando corretamente.`);
-      }
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Erro na resposta do servidor.");
-      }
-
-      const result = await response.json();
-      const responseText = result.text;
+      const responseText = response.text;
 
       if (!responseText) {
         throw new Error("A IA não retornou uma resposta válida. Tente novamente.");
