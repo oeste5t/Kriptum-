@@ -221,12 +221,12 @@ export function CaptionGenerator({ }: CaptionGeneratorProps) {
 
       addLog(`Enviando para o servidor...`);
       
-      const response = await fetch('/api/generate/caption', {
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
           image: base64Image,
-          systemPrompt,
+          systemInstruction: systemPrompt,
           userPrompt: "Analise este frame do vídeo e gere a legenda de elite em JSON seguindo as instruções do sistema."
         })
       });

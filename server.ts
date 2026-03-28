@@ -63,68 +63,41 @@ async function startServer() {
     });
   });
 
-  // Rota de Geração de Legendas
-  app.post(["/api/generate/caption", "/api/generate/caption/"], async (req, res) => {
+  // Rota Unificada de Geração (Conforme solicitação técnica)
+  app.post(["/api/generate", "/api/generate/"], async (req, res) => {
     try {
-      const { image, systemPrompt, userPrompt } = req.body;
+      const { prompt, systemInstruction, image, userPrompt, responseSchema } = req.body;
       const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
 
       if (!apiKey) {
-        console.error("[Server] Erro: GEMINI_API_KEY ou API_KEY não configurada.");
-        return res.status(500).json({ error: "Chave API não configurada no servidor. Verifique as configurações." });
+        console.error("[Server] Erro: GEMINI_API_KEY não configurada.");
+        return res.status(500).json({ error: "GEMINI_API_KEY não configurada no servidor." });
       }
 
       const ai = new GoogleGenAI({ apiKey });
       
-      const response = await ai.models.generateContent({
-        model: "gemini-1.5-flash",
-        contents: [
+      let contents;
+      if (image) {
+        contents = [
           { 
             role: "user",
             parts: [
               { inlineData: { mimeType: "image/jpeg", data: image } },
-              { text: userPrompt }
+              { text: userPrompt || prompt }
             ] 
           }
-        ],
-        config: {
-          systemInstruction: systemPrompt,
-          temperature: 0.7,
-          responseMimeType: "application/json"
-        }
-      });
-
-      if (!response.text) {
-        throw new Error("Resposta vazia da IA.");
+        ];
+      } else {
+        contents = [{ parts: [{ text: prompt }] }];
       }
 
-      res.json({ text: response.text });
-    } catch (error: any) {
-      console.error("Erro na geração de legenda:", error);
-      res.status(500).json({ error: error.message || "Erro interno na geração de legenda." });
-    }
-  });
-
-  // Rota de Geração de Prompts
-  app.post(["/api/generate/prompt", "/api/generate/prompt/"], async (req, res) => {
-    try {
-      const { prompt, systemInstruction, responseSchema } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
-
-      if (!apiKey) {
-        console.error("[Server] Erro: GEMINI_API_KEY ou API_KEY não configurada.");
-        return res.status(500).json({ error: "Chave API não configurada no servidor. Verifique as configurações." });
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      
       const response = await ai.models.generateContent({
         model: "gemini-1.5-flash",
-        contents: [{ parts: [{ text: prompt }] }],
+        contents,
         config: {
-          systemInstruction,
+          systemInstruction: systemInstruction,
           temperature: 0.7,
-          responseMimeType: responseSchema ? "application/json" : undefined,
+          responseMimeType: (image || responseSchema) ? "application/json" : undefined,
         }
       });
 
@@ -132,10 +105,10 @@ async function startServer() {
         throw new Error("Resposta vazia da IA.");
       }
 
-      res.json({ text: response.text });
+      res.status(200).json({ text: response.text });
     } catch (error: any) {
-      console.error("Erro na geração de prompt:", error);
-      res.status(500).json({ error: error.message || "Erro interno na geração de prompt." });
+      console.error("Erro na geração unificada:", error);
+      res.status(500).json({ error: error.message || "Erro interno na geração." });
     }
   });
 

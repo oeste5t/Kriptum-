@@ -40,7 +40,7 @@ const PromptGenerator = () => {
   const callGemini = async (prompt: string, systemInstruction: string, responseSchema?: any) => {
     setError(null);
     try {
-      const response = await fetch('/api/generate/prompt', {
+      const response = await fetch('/api/generate', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
