@@ -42,8 +42,15 @@ export function ImageGenerator({ hasProKey }: Props) {
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || "Erro na ponte de segurança da IA.");
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Erro na ponte de segurança da IA.");
+        } else {
+          const textError = await response.text();
+          const shortError = textError.substring(0, 100).replace(/<[^>]*>?/gm, '');
+          throw new Error(`Erro do servidor (${response.status}): ${shortError}...`);
+        }
       }
 
       const responseData = await response.json();

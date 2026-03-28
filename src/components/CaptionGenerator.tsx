@@ -108,7 +108,7 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
       const onSeeked = () => {
         try {
           addLog("Seek concluído");
-          const MAX_SIZE = 640;
+          const MAX_SIZE = 480; // Reduzido de 640 para 480 para maior compatibilidade
           let width = video.videoWidth;
           let height = video.videoHeight;
           
@@ -131,9 +131,9 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
           if (ctx) {
             ctx.drawImage(video, 0, 0, width, height);
             video.removeEventListener('seeked', onSeeked);
-            // Reduzido para 0.5 para evitar Erro 400 por payload grande em conexões oscilantes
-            const data = canvas.toDataURL('image/jpeg', 0.5).split(',')[1];
-            addLog("Frame capturado com sucesso");
+            // Reduzido para 0.4 para evitar Erro 413 (Payload Too Large)
+            const data = canvas.toDataURL('image/jpeg', 0.4).split(',')[1];
+            addLog(`Frame capturado: ~${Math.round(data.length / 1024)}KB`);
             resolve(data);
           } else {
             addLog("Erro no context 2D");
@@ -147,7 +147,19 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
         }
       };
 
-      video.addEventListener('seeked', onSeeked);
+      // Timeout aumentado para mobile (12s)
+      const timeoutId = setTimeout(() => {
+        video.removeEventListener('seeked', onSeeked);
+        addLog("Timeout na captura de frame");
+        resolve(null);
+      }, 12000);
+
+      const onSeekedWithCleanup = () => {
+        clearTimeout(timeoutId);
+        onSeeked();
+      };
+
+      video.addEventListener('seeked', onSeekedWithCleanup);
       
       // Tenta forçar o carregamento se necessário
       if (video.readyState >= 2) {
@@ -162,18 +174,15 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
           video.currentTime = targetTime;
         }, { once: true });
       }
-
-      // Timeout aumentado para mobile (12s)
-      setTimeout(() => {
-        video.removeEventListener('seeked', onSeeked);
-        addLog("Timeout na captura de frame");
-        resolve(null);
-      }, 12000);
     });
   };
 
   const handleGenerate = async () => {
     if (!videoFile) return;
+    if (!hasProKey) {
+      setError("A geração de legenda requer uma chave Google Cloud Pro configurada.");
+      return;
+    }
     setLoading(true);
     setError(null);
     setGeneratedCaption(null);
@@ -232,8 +241,17 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
       });
 
       if (!response.ok) {
-        const errData = await response.json();
-        throw new Error(errData.error || "Erro na ponte de segurança da IA.");
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errData = await response.json();
+          throw new Error(errData.error || "Erro na ponte de segurança da IA.");
+        } else {
+          const textError = await response.text();
+          console.error("Resposta não-JSON do servidor:", textError);
+          // Extrai o início da mensagem para o usuário
+          const shortError = textError.substring(0, 100).replace(/<[^>]*>?/gm, '');
+          throw new Error(`Erro do servidor (${response.status}): ${shortError}...`);
+        }
       }
 
       const responseData = await response.json();

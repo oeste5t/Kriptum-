@@ -104,8 +104,15 @@ export function VideoGenerator({ hasProKey }: VideoGeneratorProps) {
       });
 
       if (!genResponse.ok) {
-        const errData = await genResponse.json();
-        throw new Error(errData.error || "Erro na ponte de vídeo.");
+        const contentType = genResponse.headers.get("content-type");
+        if (contentType && contentType.includes("application/json")) {
+          const errData = await genResponse.json();
+          throw new Error(errData.error || "Erro na ponte de vídeo.");
+        } else {
+          const textError = await genResponse.text();
+          const shortError = textError.substring(0, 100).replace(/<[^>]*>?/gm, '');
+          throw new Error(`Erro do servidor (${genResponse.status}): ${shortError}...`);
+        }
       }
 
       const { operationId } = await genResponse.json();
