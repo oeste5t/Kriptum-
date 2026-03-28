@@ -49,8 +49,8 @@ const PromptGenerator = () => {
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      // Usando gemini-3-flash-preview para máxima compatibilidade e inteligência
-      const modelName = "gemini-3-flash-preview"; 
+      // Usando gemini-1.5-flash para máxima estabilidade e compatibilidade
+      const modelName = "gemini-1.5-flash"; 
 
       const config: any = {
         systemInstruction,

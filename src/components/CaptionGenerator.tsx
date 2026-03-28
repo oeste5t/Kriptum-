@@ -52,6 +52,7 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
 
   const addLog = (msg: string) => {
     console.log(`[KRIPTUM PRO] ${msg}`);
+    setDebugLog(prev => [msg, ...prev].slice(0, 20));
   };
 
   useEffect(() => {
@@ -105,51 +106,64 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
       video.muted = true;
       video.playsInline = true;
 
-      const onSeeked = () => {
+      const onSeeked = async () => {
         try {
-          addLog("Seek concluído");
-          const MAX_SIZE = 480; // Reduzido de 640 para 480 para maior compatibilidade
+          addLog(`Seek concluído. ReadyState: ${video.readyState}. Aguardando 200ms...`);
+          // Pequeno delay para garantir que o buffer do vídeo foi pintado na tela
+          await new Promise(r => setTimeout(r, 200));
+
+          const MAX_SIZE = 400;
           let width = video.videoWidth;
           let height = video.videoHeight;
           
+          addLog(`Dimensões detectadas: ${width}x${height}`);
+          
           if (!width || !height) {
-            addLog("Dimensões do vídeo inválidas");
-            video.removeEventListener('seeked', onSeeked);
+            addLog("ERRO: Dimensões do vídeo são zero.");
             resolve(null);
             return;
           }
 
           if (width > MAX_SIZE || height > MAX_SIZE) {
             const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
-            width *= ratio;
-            height *= ratio;
+            width = Math.floor(width * ratio);
+            height = Math.floor(height * ratio);
           }
 
+          addLog(`Redimensionando canvas para: ${width}x${height}`);
           canvas.width = width;
           canvas.height = height;
+          
           const ctx = canvas.getContext('2d', { willReadFrequently: true });
           if (ctx) {
+            addLog("Executando drawImage...");
             ctx.drawImage(video, 0, 0, width, height);
-            video.removeEventListener('seeked', onSeeked);
-            // Reduzido para 0.4 para evitar Erro 413 (Payload Too Large)
-            const data = canvas.toDataURL('image/jpeg', 0.4).split(',')[1];
-            addLog(`Frame capturado: ~${Math.round(data.length / 1024)}KB`);
-            resolve(data);
+            
+            addLog("Executando toDataURL...");
+            const data = canvas.toDataURL('image/jpeg', 0.3).split(',')[1];
+            
+            if (!data || data.length < 10) {
+              addLog("ERRO: toDataURL retornou dados inválidos.");
+              resolve(null);
+            } else {
+              addLog(`Sucesso! Frame capturado: ~${Math.round(data.length / 1024)}KB`);
+              resolve(data);
+            }
           } else {
-            addLog("Erro no context 2D");
-            video.removeEventListener('seeked', onSeeked);
+            addLog("ERRO: Falha ao obter Context 2D.");
             resolve(null);
           }
         } catch (e: any) {
-          addLog("Erro na captura: " + e.message);
-          video.removeEventListener('seeked', onSeeked);
+          addLog("EXCEÇÃO na captura: " + e.message);
           resolve(null);
+        } finally {
+          video.removeEventListener('seeked', onSeekedWithCleanup);
         }
       };
 
       // Timeout aumentado para mobile (12s)
       const timeoutId = setTimeout(() => {
-        video.removeEventListener('seeked', onSeeked);
+        video.removeEventListener('seeked', onSeekedWithCleanup);
         addLog("Timeout na captura de frame");
         resolve(null);
       }, 12000);
@@ -180,19 +194,23 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
   const handleGenerate = async () => {
     if (!videoFile) return;
     if (!hasProKey) {
-      setError("A geração de legenda requer uma chave Google Cloud Pro configurada.");
+      setError("A geração de legenda requer uma chave API configurada no seu Perfil.");
       return;
     }
     setLoading(true);
     setError(null);
     setGeneratedCaption(null);
     addLog("Iniciando geração de legenda...");
+    addLog(`Arquivo: ${videoFile.name} (${Math.round(videoFile.size / 1024)}KB)`);
+    addLog(`Tipo: ${videoFile.type}`);
 
     try {
       const base64Image = await captureFrame();
       if (!base64Image || base64Image.length < 100) {
+        addLog("Falha na captura de frame: imagem vazia ou muito pequena");
         throw new Error("Não consegui capturar uma imagem válida do vídeo. Tente dar play e pausar em um momento claro.");
       }
+      addLog("Frame capturado com sucesso");
 
       const systemPrompt = `Você é um redator de elite especializado em roteiros e legendas para vídeos curtos (Reels/TikTok).
       Analise a imagem do vídeo e crie uma legenda de alto impacto seguindo estas regras:
@@ -208,7 +226,7 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
         "hashtags": "string"
       }`;
 
-      const modelName = settings.useProModel && hasProKey ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
+      let modelName = settings.useProModel && hasProKey ? "gemini-1.5-pro" : "gemini-1.5-flash";
       addLog(`Usando modelo: ${modelName}`);
       
       const manualKey = localStorage.getItem('kriptum_manual_api_key');
@@ -219,37 +237,74 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      const response = await ai.models.generateContent({
-        model: modelName,
-        contents: [
-          { 
-            role: "user",
-            parts: [
-              { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-              { text: "Analise este frame do vídeo e gere a legenda de elite em JSON." }
-            ] 
+      let response;
+      
+      try {
+        response = await ai.models.generateContent({
+          model: modelName,
+          contents: [
+            { 
+              role: "user",
+              parts: [
+                { inlineData: { mimeType: "image/jpeg", data: base64Image } },
+                { text: "Analise este frame do vídeo e gere a legenda de elite em JSON seguindo as instruções do sistema." }
+              ] 
+            }
+          ],
+          config: {
+            systemInstruction: systemPrompt,
+            temperature: 0.7,
+            responseMimeType: "application/json"
           }
-        ],
-        config: {
-          systemInstruction: systemPrompt,
-          temperature: 0.7,
-          responseMimeType: "application/json"
+        });
+      } catch (firstErr: any) {
+        // Se o Pro falhar e estivermos usando ele, tenta o Flash como fallback
+        if (modelName === "gemini-1.5-pro") {
+          addLog("Modelo Pro falhou ou indisponível. Tentando Flash como fallback...");
+          modelName = "gemini-1.5-flash";
+          response = await ai.models.generateContent({
+            model: modelName,
+            contents: [
+              { 
+                role: "user",
+                parts: [
+                  { inlineData: { mimeType: "image/jpeg", data: base64Image } },
+                  { text: "Analise este frame do vídeo e gere a legenda de elite em JSON seguindo as instruções do sistema." }
+                ] 
+              }
+            ],
+            config: {
+              systemInstruction: systemPrompt,
+              temperature: 0.7,
+              responseMimeType: "application/json"
+            }
+          });
+        } else {
+          throw firstErr;
         }
-      });
+      }
 
       if (!response || !response.text) {
         throw new Error("A IA não retornou uma resposta válida. Tente novamente.");
       }
 
+      addLog(`Resposta recebida (${response.text.length} caracteres)`);
+      addLog(`Modelo final utilizado: ${modelName}`);
+
       let data;
       try {
+        addLog("Tentando processar JSON...");
         data = JSON.parse(response.text.trim());
       } catch (e) {
+        addLog("JSON.parse falhou, tentando extração via regex...");
         // Fallback: tenta extrair JSON se o modelo retornar texto extra
         const match = response.text.match(/\{[\s\S]*\}/);
         if (match) {
+          addLog("JSON extraído via regex com sucesso");
           data = JSON.parse(match[0]);
         } else {
+          addLog("Falha total na extração de JSON");
+          addLog("Texto bruto da IA: " + response.text.substring(0, 100) + "...");
           throw new Error("Erro ao processar os dados da IA. Tente novamente.");
         }
       }
@@ -272,9 +327,19 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
       setProgress(100);
       addLog("Geração concluída com sucesso");
     } catch (err: any) {
-      console.error(err);
-      addLog(`Erro na geração: ${err.message}`);
-      setError(err.message || "Erro na conexão com a IA.");
+      console.error("Erro detalhado na geração:", err);
+      let errorMsg = err.message || "Erro desconhecido na conexão com a IA.";
+      
+      if (errorMsg.includes("404") || errorMsg.includes("NOT_FOUND")) {
+        errorMsg = "Modelo não encontrado ou Chave API inválida para este modelo. Verifique sua chave no perfil.";
+      } else if (errorMsg.includes("429") || errorMsg.includes("RESOURCE_EXHAUSTED")) {
+        errorMsg = "Limite de uso da IA atingido. Tente novamente em alguns segundos.";
+      } else if (errorMsg.includes("400") || errorMsg.includes("INVALID_ARGUMENT")) {
+        errorMsg = "Erro nos dados enviados (talvez o vídeo seja incompatível). Tente outro vídeo.";
+      }
+      
+      addLog(`Erro na geração: ${errorMsg}`);
+      setError(errorMsg);
     } finally {
       setLoading(false);
     }
@@ -551,6 +616,30 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
                     >
                       <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.useProModel ? 'right-1' : 'left-1'}`} />
                     </button>
+                  </div>
+
+                  <div className="pt-6 border-t border-white/5 space-y-4">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-bold text-[10px] uppercase text-slate-500 tracking-widest">Logs de Sistema (Debug)</h4>
+                      <button 
+                        onClick={() => setDebugLog([])}
+                        className="text-[10px] font-bold text-slate-600 uppercase hover:text-white transition-colors"
+                      >
+                        Limpar Logs
+                      </button>
+                    </div>
+                    <div className="bg-[#0a0a0a] rounded-xl p-3 border border-white/5 max-h-40 overflow-y-auto font-mono text-[10px] space-y-1">
+                      {debugLog.length > 0 ? (
+                        debugLog.map((log, i) => (
+                          <div key={i} className="text-slate-500">
+                            <span className="text-brand/50 mr-2">[{debugLog.length - 1 - i}]</span>
+                            {log}
+                          </div>
+                        ))
+                      ) : (
+                        <div className="text-slate-700 italic">Nenhum log registrado</div>
+                      )}
+                    </div>
                   </div>
                 </div>
               </div>

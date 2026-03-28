@@ -86,7 +86,7 @@ declare global {
 }
 
 type Tab = 'inicio' | 'aulas' | 'ferramentas' | 'clips' | 'configuracoes' | 'notificacoes';
-type ToolId = 'none' | 'legenda' | 'prompt' | 'calculadora' | 'calendario' | 'notas';
+type ToolId = 'none' | 'legenda' | 'prompt' | 'imagem' | 'video';
 
 // --- Componente de Logo Kriptum ---
 function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { size?: number, className?: string, rounded?: string }) {
@@ -532,8 +532,8 @@ export default function App() {
               {activeTab === 'inicio' && (
                 <HomeView 
                   user={user} 
-                  notificationsCount={notifications.length} 
                   onSelectTab={setActiveTab} 
+                  onSelectTool={setActiveTool}
                   deferredPrompt={deferredPrompt}
                   onInstall={handleInstall}
                 />
@@ -662,7 +662,7 @@ export default function App() {
 
 // --- Views das Abas ---
 
-function HomeView({ user, notificationsCount, onSelectTab, deferredPrompt, onInstall }: { user: any, notificationsCount: number, onSelectTab: (tab: Tab) => void, deferredPrompt: any, onInstall: () => void }) {
+function HomeView({ user, onSelectTab, onSelectTool, deferredPrompt, onInstall }: { user: any, onSelectTab: (tab: Tab) => void, onSelectTool: (tool: ToolId) => void, deferredPrompt: any, onInstall: () => void }) {
   return (
     <div className="space-y-8">
       {/* Welcome Section with Logo */}
@@ -720,31 +720,30 @@ function HomeView({ user, notificationsCount, onSelectTab, deferredPrompt, onIns
           <h3 className="font-display font-bold text-lg text-white">Ferramentas</h3>
           <button onClick={() => onSelectTab('ferramentas')} className="text-sm font-medium text-brand hover:text-brand-glow transition-colors">Ver todas</button>
         </div>
-        
         <div className="grid grid-cols-2 gap-4">
-          <div onClick={() => onSelectTab('ferramentas')} className="bg-[#141414] p-5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-brand/30 transition-all group">
+          <div onClick={() => { onSelectTab('ferramentas'); onSelectTool('legenda'); }} className="bg-[#141414] p-5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-brand/30 transition-all group">
             <div className="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center text-brand group-hover:scale-110 transition-transform">
               <FileText size={24} />
             </div>
             <span className="font-display font-bold text-xs text-center text-white">Gerador de Legenda</span>
           </div>
-          <div onClick={() => onSelectTab('ferramentas')} className="bg-[#141414] p-5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-brand/30 transition-all group">
+          <div onClick={() => { onSelectTab('ferramentas'); onSelectTool('prompt'); }} className="bg-[#141414] p-5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-brand/30 transition-all group">
             <div className="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center text-brand group-hover:scale-110 transition-transform">
-              <Video size={24} />
+              <Sparkles size={24} />
             </div>
-            <span className="font-display font-bold text-xs text-center text-white">Gerador de Vídeo</span>
+            <span className="font-display font-bold text-xs text-center text-white">Gerador de Prompt</span>
           </div>
-          <div onClick={() => onSelectTab('ferramentas')} className="bg-[#141414] p-5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-brand/30 transition-all group">
+          <div onClick={() => { onSelectTab('ferramentas'); onSelectTool('imagem'); }} className="bg-[#141414] p-5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-brand/30 transition-all group">
             <div className="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center text-brand group-hover:scale-110 transition-transform">
               <LucideImageIcon size={24} />
             </div>
             <span className="font-display font-bold text-xs text-center text-white">Gerador de Imagem</span>
           </div>
-          <div onClick={() => onSelectTab('ferramentas')} className="bg-[#141414] p-5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-brand/30 transition-all group">
-            <div className="w-12 h-12 rounded-full bg-slate-800 flex items-center justify-center text-slate-400 group-hover:scale-110 transition-transform">
-              <Calculator size={24} />
+          <div onClick={() => { onSelectTab('ferramentas'); onSelectTool('video'); }} className="bg-[#141414] p-5 rounded-2xl border border-white/5 flex flex-col items-center gap-3 cursor-pointer hover:border-brand/30 transition-all group">
+            <div className="w-12 h-12 rounded-full bg-brand/10 flex items-center justify-center text-brand group-hover:scale-110 transition-transform">
+              <Video size={24} />
             </div>
-            <span className="font-display font-bold text-xs text-center text-white">Calculadora</span>
+            <span className="font-display font-bold text-xs text-center text-white">Gerador de Vídeo</span>
           </div>
         </div>
       </section>
@@ -776,9 +775,8 @@ function ToolsView({ onSelectTool }: { onSelectTool: (id: ToolId) => void }) {
   const tools = [
     { id: 'legenda', name: 'Gerador Legenda', icon: FileText, color: 'bg-brand/10 text-brand border-brand/30' },
     { id: 'prompt', name: 'Gerador Prompt', icon: Sparkles, color: 'bg-brand/10 text-brand border-brand/30' },
-    { id: 'calculadora', name: 'Calculadora', icon: Calculator, color: 'bg-slate-800 text-slate-400 border-white/5' },
-    { id: 'calendario', name: 'Calendário', icon: Calendar, color: 'bg-slate-800 text-slate-400 border-white/5' },
-    { id: 'notas', name: 'Anotações', icon: FileText, color: 'bg-slate-800 text-slate-400 border-white/5' },
+    { id: 'imagem', name: 'Gerador Imagem', icon: LucideImageIcon, color: 'bg-brand/10 text-brand border-brand/30' },
+    { id: 'video', name: 'Gerador Vídeo', icon: Video, color: 'bg-brand/10 text-brand border-brand/30' },
   ];
 
   return (
