@@ -16,6 +16,7 @@ export default defineConfig(({mode}) => {
           enabled: true
         },
         includeAssets: ['icon-192.png', 'icon-512.png', 'icon-192.svg', 'icon-512.svg'],
+        filename: 'manifest.json',
         manifest: {
           id: "kriptum-pro-pwa-v3",
           name: 'Kriptum',

@@ -49,18 +49,15 @@ const PromptGenerator = () => {
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      // Usando gemini-flash-latest para máxima compatibilidade
-      const modelName = "gemini-flash-latest"; 
+      // Usando gemini-1.5-flash para máxima compatibilidade e estabilidade
+      const modelName = "gemini-1.5-flash"; 
 
       const config: any = {
         systemInstruction,
         temperature: 0.7,
+        responseMimeType: responseSchema ? "application/json" : undefined,
+        responseSchema: responseSchema || undefined,
       };
-
-      if (responseSchema) {
-        config.responseMimeType = "application/json";
-        config.responseSchema = responseSchema;
-      }
 
       const responsePromise = ai.models.generateContent({
         model: modelName,
@@ -221,11 +218,16 @@ const PromptGenerator = () => {
 
     try {
       const result = await callGemini(userPrompt, systemPrompt, schema);
-      setGeneratedPrompt(result.prompt);
+      if (result && result.prompt) {
+        setGeneratedPrompt(result.prompt);
+      } else {
+        throw new Error("A IA não retornou o prompt esperado.");
+      }
       setIsGeneratingPrompt(false);
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Erro ao gerar prompt final:", error);
       setIsGeneratingPrompt(false);
+      setError(error.message || "Erro ao gerar prompt final. Tente novamente.");
     }
   };
 
