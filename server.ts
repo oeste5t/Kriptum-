@@ -40,9 +40,11 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  // Middleware de Log para depuração
+  // Middleware de Log para depuração (apenas para API)
   app.use((req, res, next) => {
-    console.log(`[Server] ${req.method} ${req.url}`);
+    if (req.url.startsWith('/api')) {
+      console.log(`[Server] ${req.method} ${req.url}`);
+    }
     next();
   });
 

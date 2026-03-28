@@ -39,12 +39,12 @@ import {
   AlertTriangle,
   X,
   Mail,
-  Info
+  Info,
+  Sparkles
 } from 'lucide-react';
-import { ErrorBoundary } from './components/ErrorBoundary';
+import { ErrorBoundary } from './components/ErrorBoundary.tsx';
 import { CaptionGenerator } from './components/CaptionGenerator';
-import { VideoGenerator } from './components/VideoGenerator';
-import { ImageGenerator } from './components/ImageGenerator';
+import { PromptGenerator } from './components/PromptGenerator.tsx';
 import { Lessons } from './components/Lessons';
 import { ALL_LESSONS } from './constants';
 import { 
@@ -86,7 +86,7 @@ declare global {
 }
 
 type Tab = 'inicio' | 'aulas' | 'ferramentas' | 'clips' | 'configuracoes' | 'notificacoes';
-type ToolId = 'none' | 'legenda' | 'video' | 'imagem' | 'calculadora' | 'calendario' | 'notas';
+type ToolId = 'none' | 'legenda' | 'prompt' | 'calculadora' | 'calendario' | 'notas';
 
 // --- Componente de Logo Kriptum ---
 function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { size?: number, className?: string, rounded?: string }) {
@@ -552,9 +552,8 @@ export default function App() {
                       Voltar às Ferramentas
                     </button>
                     {activeTool === 'legenda' && <CaptionGenerator hasProKey={hasProKey} />}
-                    {activeTool === 'video' && <VideoGenerator hasProKey={hasProKey} />}
-                    {activeTool === 'imagem' && <ImageGenerator hasProKey={hasProKey} />}
-                    {activeTool !== 'legenda' && activeTool !== 'video' && activeTool !== 'imagem' && (
+                    {activeTool === 'prompt' && <PromptGenerator />}
+                    {activeTool !== 'legenda' && activeTool !== 'prompt' && (
                       <div className="py-20 text-center space-y-4">
                         <div className="w-20 h-20 bg-[#141414] rounded-3xl mx-auto flex items-center justify-center border border-white/5">
                           <Wrench size={40} className="text-slate-700" />
@@ -776,8 +775,7 @@ function HomeView({ user, notificationsCount, onSelectTab, deferredPrompt, onIns
 function ToolsView({ onSelectTool }: { onSelectTool: (id: ToolId) => void }) {
   const tools = [
     { id: 'legenda', name: 'Gerador Legenda', icon: FileText, color: 'bg-brand/10 text-brand border-brand/30' },
-    { id: 'video', name: 'Gerador Vídeo', icon: Video, color: 'bg-brand/10 text-brand border-brand/30' },
-    { id: 'imagem', name: 'Gerador Imagem', icon: LucideImageIcon, color: 'bg-brand/10 text-brand border-brand/30' },
+    { id: 'prompt', name: 'Gerador Prompt', icon: Sparkles, color: 'bg-brand/10 text-brand border-brand/30' },
     { id: 'calculadora', name: 'Calculadora', icon: Calculator, color: 'bg-slate-800 text-slate-400 border-white/5' },
     { id: 'calendario', name: 'Calendário', icon: Calendar, color: 'bg-slate-800 text-slate-400 border-white/5' },
     { id: 'notas', name: 'Anotações', icon: FileText, color: 'bg-slate-800 text-slate-400 border-white/5' },
