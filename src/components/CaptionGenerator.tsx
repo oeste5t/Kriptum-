@@ -209,7 +209,7 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
       [PARAGRAFO 8]
       [HASHTAGS]`;
 
-      const modelName = settings.useProModel && hasProKey ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
+      const modelName = settings.useProModel && hasProKey ? "gemini-3.1-pro-preview" : "gemini-flash-latest";
       addLog(`Usando modelo: ${modelName}`);
       
       const manualKey = localStorage.getItem('kriptum_manual_api_key');

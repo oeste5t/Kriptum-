@@ -12,9 +12,10 @@ import {
   Film,
   MapPin,
   Settings,
-  Zap
+  Zap,
+  AlertTriangle
 } from 'lucide-react';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 
 const PromptGenerator = () => {
   const [characters, setCharacters] = useState<any[]>([]);
@@ -34,8 +35,11 @@ const PromptGenerator = () => {
     estiloRoupa: ""
   });
 
+  const [error, setError] = useState<string | null>(null);
+
   // Função de chamada à API usando SDK
   const callGemini = async (prompt: string, systemInstruction: string, responseSchema?: any) => {
+    setError(null);
     try {
       const manualKey = localStorage.getItem('kriptum_manual_api_key');
       const apiKey = manualKey || process.env.GEMINI_API_KEY;
@@ -45,8 +49,8 @@ const PromptGenerator = () => {
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      // Usando gemini-1.5-flash para velocidade e confiabilidade
-      const modelName = "gemini-1.5-flash"; 
+      // Usando gemini-flash-latest para máxima compatibilidade
+      const modelName = "gemini-flash-latest"; 
 
       const config: any = {
         systemInstruction,
@@ -58,22 +62,27 @@ const PromptGenerator = () => {
         config.responseSchema = responseSchema;
       }
 
-      // Adicionando um timeout de 20 segundos para falhar rápido se necessário
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("Tempo limite excedido. Tente novamente.")), 20000)
-      );
-
       const responsePromise = ai.models.generateContent({
         model: modelName,
         contents: [{ parts: [{ text: prompt }] }],
         config
       });
 
+      // Timeout de 25 segundos
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error("A IA demorou muito para responder. Tente novamente.")), 25000)
+      );
+
       const response: any = await Promise.race([responsePromise, timeoutPromise]);
+
+      if (!response || !response.text) {
+        throw new Error("A IA não retornou uma resposta válida.");
+      }
 
       if (responseSchema) {
         try {
-          return JSON.parse(response.text);
+          const text = response.text.trim();
+          return JSON.parse(text);
         } catch (e) {
           console.error("Erro ao parsear JSON da IA:", response.text);
           // Fallback: tenta extrair JSON se o modelo retornar texto extra
@@ -85,6 +94,10 @@ const PromptGenerator = () => {
       return response.text;
     } catch (error: any) {
       console.error("Erro na chamada Gemini:", error);
+      // Se for 404, tentamos o alias genérico
+      if (error.status === "NOT_FOUND" || (error.message && error.message.includes("404"))) {
+        throw new Error("Modelo não encontrado. Verifique sua chave API ou tente novamente mais tarde.");
+      }
       throw error;
     }
   };
@@ -113,40 +126,40 @@ const PromptGenerator = () => {
     Estilo de Roupa: ${newChar.estiloRoupa || "Elegante sofisticado"}`;
 
     const schema = {
-      type: Type.OBJECT,
+      type: "OBJECT",
       properties: {
         Identidade: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            Nome: { type: Type.STRING },
-            Gênero: { type: Type.STRING },
-            Idade: { type: Type.STRING },
-            Nacionalidade: { type: Type.STRING }
+            Nome: { type: "STRING" },
+            Gênero: { type: "STRING" },
+            Idade: { type: "STRING" },
+            Nacionalidade: { type: "STRING" }
           }
         },
         Fisico: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            Corpo: { type: Type.STRING },
-            Rosto: { type: Type.STRING },
-            Olhos: { type: Type.STRING },
-            Cabelo: { type: Type.STRING }
+            Corpo: { type: "STRING" },
+            Rosto: { type: "STRING" },
+            Olhos: { type: "STRING" },
+            Cabelo: { type: "STRING" }
           }
         },
         Vestuario: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            DetalheDaRoupa: { type: Type.STRING },
-            Sapatos: { type: Type.STRING },
-            Acessorios: { type: Type.STRING }
+            DetalheDaRoupa: { type: "STRING" },
+            Sapatos: { type: "STRING" },
+            Acessorios: { type: "STRING" }
           }
         },
         Fotografia: {
-          type: Type.OBJECT,
+          type: "OBJECT",
           properties: {
-            Lente: { type: Type.STRING },
-            Iluminação: { type: Type.STRING },
-            Atmosfera: { type: Type.STRING }
+            Lente: { type: "STRING" },
+            Iluminação: { type: "STRING" },
+            Atmosfera: { type: "STRING" }
           }
         }
       }
@@ -154,12 +167,25 @@ const PromptGenerator = () => {
 
     try {
       const fullSheet = await callGemini(userPrompt, systemPrompt, schema);
-      setCharacters([...characters, { ...fullSheet, id: Date.now() }]);
+      
+      if (!fullSheet || typeof fullSheet !== 'object') {
+        throw new Error("A IA retornou dados inválidos.");
+      }
+
+      const characterWithId = { 
+        ...fullSheet, 
+        id: Date.now(),
+        // Garantindo que Identidade existe para evitar erros de renderização
+        Identidade: fullSheet.Identidade || { Nome: newChar.nome, Nacionalidade: newChar.nacionalidade }
+      };
+
+      setCharacters(prev => [...prev, characterWithId]);
       setIsCreating(false);
       setNewChar({ nome: "", idade: "", genero: "", nacionalidade: "", estiloRoupa: "" });
-    } catch (error) {
-      console.error(error);
+    } catch (error: any) {
+      console.error("Erro ao criar personagem:", error);
       setIsCreating(false);
+      setError(error.message || "Erro ao criar personagem. Tente novamente.");
     }
   };
 
@@ -187,9 +213,9 @@ const PromptGenerator = () => {
       Create the ultimate high-fidelity prompt. English for visuals, Portuguese for dialogue.`;
 
     const schema = {
-      type: Type.OBJECT,
+      type: "OBJECT",
       properties: {
-        prompt: { type: Type.STRING }
+        prompt: { type: "STRING" }
       }
     };
 
@@ -263,6 +289,13 @@ const PromptGenerator = () => {
                 {isCreating ? <Loader2 className="w-5 h-5 animate-spin" /> : <Zap className="w-5 h-5 group-hover:scale-125 transition-transform" />}
                 {isCreating ? "IA ESTÁ CRIANDO..." : "EXPANDIR PERSONAGEM"}
               </button>
+
+              {error && (
+                <div className="p-3 bg-red-500/10 border border-red-500/20 rounded-xl flex items-center gap-2 text-[10px] text-red-400 font-bold animate-in fade-in slide-in-from-top-1">
+                  <AlertTriangle className="w-3 h-3 flex-shrink-0" />
+                  <span>{error}</span>
+                </div>
+              )}
             </div>
           </div>
 
