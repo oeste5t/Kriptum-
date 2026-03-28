@@ -161,6 +161,7 @@ export default function App() {
             setUserRole(newUser.role as any);
           } else {
             const currentRole = userSnap.data().role;
+            // Garantia de Admin para o seu email
             if (currentUser.email === 'perigoreal00@gmail.com' && currentRole !== 'admin') {
               await setDoc(userRef, { role: 'admin' }, { merge: true });
               setUserRole('admin');
@@ -182,7 +183,7 @@ export default function App() {
     return () => unsubscribe();
   }, []);
 
-  // Settings persistence
+  // Persistence & PWA
   useEffect(() => {
     const savedPerf = localStorage.getItem('lowPerfMode');
     if (savedPerf === 'true') setLowPerfMode(true);
@@ -193,28 +194,13 @@ export default function App() {
     checkApiKey();
 
     // PWA Install Prompt
-    window.addEventListener('beforeinstallprompt', (e) => {
+    const handleBeforeInstallPrompt = (e: any) => {
       e.preventDefault();
       setDeferredPrompt(e);
-    });
+    };
+    window.addEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
 
-    // Check for Service Worker updates
-    if ('serviceWorker' in navigator) {
-      navigator.serviceWorker.getRegistration().then(reg => {
-        if (reg) {
-          reg.addEventListener('updatefound', () => {
-            const newWorker = reg.installing;
-            if (newWorker) {
-              newWorker.addEventListener('statechange', () => {
-                if (newWorker.state === 'installed' && navigator.serviceWorker.controller) {
-                  setUpdateAvailable(true);
-                }
-              });
-            }
-          });
-        }
-      });
-    }
+    return () => window.removeEventListener('beforeinstallprompt', handleBeforeInstallPrompt);
   }, []);
 
   const handleRefresh = () => {
@@ -297,8 +283,20 @@ export default function App() {
     } catch (error: any) {
       console.error('Login Error:', error);
       setLoginError(true);
-      setErrorMessage('Falha ao entrar com Google.');
-      setTimeout(() => setLoginError(false), 3000);
+      
+      let msg = 'Falha ao entrar com Google.';
+      if (error.code === 'auth/unauthorized-domain') {
+        msg = 'Domínio não autorizado no Firebase. Adicione este domínio nas configurações do Firebase Console.';
+      } else if (error.code === 'auth/popup-blocked') {
+        msg = 'O pop-up de login foi bloqueado pelo seu navegador.';
+      } else if (error.code === 'auth/cancelled-popup-request') {
+        msg = 'O login foi cancelado.';
+      } else if (error.message) {
+        msg = `Erro: ${error.code || error.message}`;
+      }
+      
+      setErrorMessage(msg);
+      setTimeout(() => setLoginError(false), 5000);
     }
   };
 

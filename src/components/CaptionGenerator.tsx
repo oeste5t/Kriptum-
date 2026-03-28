@@ -51,8 +51,7 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
   };
 
   const addLog = (msg: string) => {
-    console.log(`[KRIPTUM PRO Debug] ${msg}`);
-    setDebugLog(prev => [msg, ...prev].slice(0, 5));
+    console.log(`[KRIPTUM PRO] ${msg}`);
   };
 
   useEffect(() => {
@@ -333,11 +332,6 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
         >
           {view === 'generator' && (
             <div key="generator-view" className="space-y-6">
-              {debugLog.length > 0 && (
-                <div className="p-2 bg-black/50 rounded-lg text-[8px] font-mono text-slate-500">
-                  {debugLog.map((log, i) => <p key={i}>{log}</p>)}
-                </div>
-              )}
               <div className="bg-[#141414] rounded-2xl p-4 border border-white/5">
                 {!videoPreview ? (
                   <label className="flex flex-col items-center justify-center py-12 border-2 border-dashed border-white/10 rounded-2xl cursor-pointer hover:border-brand/50 transition-all group">

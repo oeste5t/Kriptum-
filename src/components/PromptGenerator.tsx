@@ -49,7 +49,7 @@ const PromptGenerator = () => {
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      // Usando gemini-1.5-flash para máxima compatibilidade e estabilidade
+      // Usando gemini-1.5-flash para máxima estabilidade
       const modelName = "gemini-1.5-flash"; 
 
       const config: any = {
@@ -65,7 +65,7 @@ const PromptGenerator = () => {
         config
       });
 
-      // Timeout de 25 segundos
+      // Timeout de 25 segundos para evitar travamentos
       const timeoutPromise = new Promise((_, reject) => 
         setTimeout(() => reject(new Error("A IA demorou muito para responder. Tente novamente.")), 25000)
       );
@@ -81,19 +81,17 @@ const PromptGenerator = () => {
           const text = response.text.trim();
           return JSON.parse(text);
         } catch (e) {
-          console.error("Erro ao parsear JSON da IA:", response.text);
           // Fallback: tenta extrair JSON se o modelo retornar texto extra
           const match = response.text.match(/\{[\s\S]*\}/);
           if (match) return JSON.parse(match[0]);
-          throw new Error("A IA retornou um formato inválido. Tente novamente.");
+          throw new Error("Erro ao processar resposta da IA. Tente novamente.");
         }
       }
       return response.text;
     } catch (error: any) {
       console.error("Erro na chamada Gemini:", error);
-      // Se for 404, tentamos o alias genérico
       if (error.status === "NOT_FOUND" || (error.message && error.message.includes("404"))) {
-        throw new Error("Modelo não encontrado. Verifique sua chave API ou tente novamente mais tarde.");
+        throw new Error("Modelo não encontrado ou Chave API inválida.");
       }
       throw error;
     }
