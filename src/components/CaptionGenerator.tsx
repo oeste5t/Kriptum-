@@ -215,7 +215,9 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
       const manualKey = localStorage.getItem('kriptum_manual_api_key');
       if (manualKey) headers['x-gemini-key'] = manualKey;
 
-      const response = await fetch("/api/ai/generate", {
+      const apiPath = "/api/ai/generate";
+      addLog(`Chamando API: ${apiPath}`);
+      const response = await fetch(apiPath, {
         method: "POST",
         headers,
         body: JSON.stringify({

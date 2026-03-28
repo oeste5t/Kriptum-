@@ -88,7 +88,8 @@ export function VideoGenerator({ hasProKey }: VideoGeneratorProps) {
       const manualKey = localStorage.getItem('kriptum_manual_api_key');
       if (manualKey) headers['x-gemini-key'] = manualKey;
 
-      const genResponse = await fetch("/api/ai/generate-video", {
+      const apiPath = "/api/ai/generate-video";
+      const genResponse = await fetch(apiPath, {
         method: "POST",
         headers,
         body: JSON.stringify({

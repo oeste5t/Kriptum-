@@ -40,11 +40,17 @@ async function startServer() {
   const app = express();
   const PORT = 3000;
 
-  app.use(express.json({ limit: '50mb' }));
-  app.use(express.urlencoded({ limit: '50mb', extended: true }));
+  // Middleware de Log para depuração
+  app.use((req, res, next) => {
+    console.log(`[Server] ${req.method} ${req.url}`);
+    next();
+  });
 
-  // Endpoint de Diagnóstico (Para ajudar o usuário a ver se a chave está configurada)
-  app.get("/api/system/status", (req, res) => {
+  app.use(express.json({ limit: '100mb' }));
+  app.use(express.urlencoded({ limit: '100mb', extended: true }));
+
+  // Endpoint de Diagnóstico
+  app.get(["/api/system/status", "/api/system/status/"], (req, res) => {
     const clientKey = req.headers['x-gemini-key'] as string;
     const apiKey = clientKey || process.env.API_KEY || process.env.GEMINI_API_KEY;
     res.json({
@@ -55,8 +61,8 @@ async function startServer() {
     });
   });
 
-  // API Proxy para Gemini (Segurança e Funcionamento Externo)
-  app.post("/api/ai/generate", async (req, res) => {
+  // API Proxy para Gemini
+  app.post(["/api/ai/generate", "/api/ai/generate/"], async (req, res) => {
     try {
       const { model, contents, systemInstruction, config } = req.body;
       // Tenta pegar a chave do cabeçalho (enviada pelo cliente) ou do ambiente
@@ -89,7 +95,7 @@ async function startServer() {
   });
 
   // Proxy para Geração de Vídeo (Veo)
-  app.post("/api/ai/generate-video", async (req, res) => {
+  app.post(["/api/ai/generate-video", "/api/ai/generate-video/"], async (req, res) => {
     try {
       const { model, prompt, image, config } = req.body;
       const clientKey = req.headers['x-gemini-key'] as string;
@@ -117,7 +123,7 @@ async function startServer() {
   });
 
   // Polling para status do vídeo
-  app.get("/api/ai/video-status/:id", async (req, res) => {
+  app.get(["/api/ai/video-status/:id", "/api/ai/video-status/:id/"], async (req, res) => {
     try {
       const { id } = req.params;
       const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
@@ -132,7 +138,7 @@ async function startServer() {
   });
 
   // Proxy para download de vídeo seguro
-  app.get("/api/ai/video-download", async (req, res) => {
+  app.get(["/api/ai/video-download", "/api/ai/video-download/"], async (req, res) => {
     try {
       const { url } = req.query;
       const apiKey = process.env.API_KEY || process.env.GEMINI_API_KEY;
