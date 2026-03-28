@@ -291,6 +291,8 @@ export default function App() {
         msg = 'O pop-up de login foi bloqueado pelo seu navegador.';
       } else if (error.code === 'auth/cancelled-popup-request') {
         msg = 'O login foi cancelado.';
+      } else if (error.code === 'auth/network-request-failed') {
+        msg = 'Erro de rede. Verifique sua conexão ou tente abrir o app em uma nova aba (fora do AI Studio) para evitar bloqueios do navegador.';
       } else if (error.message) {
         msg = `Erro: ${error.code || error.message}`;
       }

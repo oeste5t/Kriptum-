@@ -194,21 +194,21 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
         throw new Error("Não consegui capturar uma imagem válida do vídeo. Tente dar play e pausar em um momento claro.");
       }
 
-      const systemPrompt = `Você é um redator de elite. 
-      REGRAS:
-      1. Título curto em minúsculas.
-      2. 8 parágrafos de valor (sem emojis).
-      3. Linguagem direta e impactante.
-      4. 5 hashtags técnicas no final.
+      const systemPrompt = `Você é um redator de elite especializado em roteiros e legendas para vídeos curtos (Reels/TikTok).
+      Analise a imagem do vídeo e crie uma legenda de alto impacto seguindo estas regras:
+      1. Título curto e chamativo em minúsculas.
+      2. 8 parágrafos de puro valor, sem emojis, focados em retenção e autoridade.
+      3. Linguagem direta, "papo reto".
+      4. 5 hashtags técnicas e relevantes.
       
-      FORMATO DE RESPOSTA:
-      [TITULO]
-      [PARAGRAFO 1]
-      ...
-      [PARAGRAFO 8]
-      [HASHTAGS]`;
+      Você DEVE responder APENAS em formato JSON seguindo este esquema:
+      {
+        "titulo": "string",
+        "paragrafos": ["string", "string", ...],
+        "hashtags": "string"
+      }`;
 
-      const modelName = settings.useProModel && hasProKey ? "gemini-1.5-pro" : "gemini-1.5-flash";
+      const modelName = settings.useProModel && hasProKey ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
       addLog(`Usando modelo: ${modelName}`);
       
       const manualKey = localStorage.getItem('kriptum_manual_api_key');
@@ -226,36 +226,42 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
             role: "user",
             parts: [
               { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-              { text: "Crie uma legenda de elite para este vídeo baseado nesta imagem capturada dele." }
+              { text: "Analise este frame do vídeo e gere a legenda de elite em JSON." }
             ] 
           }
         ],
         config: {
           systemInstruction: systemPrompt,
           temperature: 0.7,
-          topP: 0.95,
-          topK: 40
+          responseMimeType: "application/json"
         }
       });
 
-      const rawText = response.text || "";
-      addLog("Resposta recebida da IA");
-      const lines = rawText.split('\n').filter(l => l.trim() !== "");
-      
-      if (lines.length < 3) throw new Error("A IA falhou em gerar o conteúdo completo. Tente novamente.");
+      if (!response || !response.text) {
+        throw new Error("A IA não retornou uma resposta válida. Tente novamente.");
+      }
 
-      const title = lines[0].replace('[TITULO]', '').trim();
-      const hashtags = lines[lines.length - 1].includes('#') ? lines[lines.length - 1] : "#foco #progresso #vibe #valor #lifestyle";
-      const bodyParagraphs = lines.slice(1, lines.length - 1).slice(0, 8);
+      let data;
+      try {
+        data = JSON.parse(response.text.trim());
+      } catch (e) {
+        // Fallback: tenta extrair JSON se o modelo retornar texto extra
+        const match = response.text.match(/\{[\s\S]*\}/);
+        if (match) {
+          data = JSON.parse(match[0]);
+        } else {
+          throw new Error("Erro ao processar os dados da IA. Tente novamente.");
+        }
+      }
 
       const finalCTA = ctaModels[settings.ctaModel](settings.handle);
       
       const fullCaption = {
         id: Date.now().toString(),
-        title: title.toLowerCase(),
-        body: bodyParagraphs,
+        title: (data.titulo || "sem título").toLowerCase(),
+        body: Array.isArray(data.paragrafos) ? data.paragrafos.slice(0, 8) : ["Erro ao gerar parágrafos"],
         cta: finalCTA,
-        hashtags: hashtags,
+        hashtags: data.hashtags || "#foco #progresso #vibe #valor #lifestyle",
         createdAt: Date.now()
       };
 

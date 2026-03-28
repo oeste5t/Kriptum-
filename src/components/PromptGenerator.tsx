@@ -49,14 +49,13 @@ const PromptGenerator = () => {
       }
 
       const ai = new GoogleGenAI({ apiKey });
-      // Usando gemini-1.5-flash para máxima estabilidade
-      const modelName = "gemini-1.5-flash"; 
+      // Usando gemini-3-flash-preview para máxima compatibilidade e inteligência
+      const modelName = "gemini-3-flash-preview"; 
 
       const config: any = {
         systemInstruction,
         temperature: 0.7,
         responseMimeType: responseSchema ? "application/json" : undefined,
-        responseSchema: responseSchema || undefined,
       };
 
       const responsePromise = ai.models.generateContent({
@@ -65,29 +64,30 @@ const PromptGenerator = () => {
         config
       });
 
-      // Timeout de 25 segundos para evitar travamentos
+      // Timeout de 30 segundos
       const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("A IA demorou muito para responder. Tente novamente.")), 25000)
+        setTimeout(() => reject(new Error("A IA demorou muito para responder. Tente novamente.")), 30000)
       );
 
       const response: any = await Promise.race([responsePromise, timeoutPromise]);
 
       if (!response || !response.text) {
-        throw new Error("A IA não retornou uma resposta válida.");
+        throw new Error("A IA não retornou uma resposta válida. Verifique sua chave API.");
       }
+
+      const rawText = response.text.trim();
 
       if (responseSchema) {
         try {
-          const text = response.text.trim();
-          return JSON.parse(text);
+          return JSON.parse(rawText);
         } catch (e) {
           // Fallback: tenta extrair JSON se o modelo retornar texto extra
-          const match = response.text.match(/\{[\s\S]*\}/);
+          const match = rawText.match(/\{[\s\S]*\}/);
           if (match) return JSON.parse(match[0]);
           throw new Error("Erro ao processar resposta da IA. Tente novamente.");
         }
       }
-      return response.text;
+      return rawText;
     } catch (error: any) {
       console.error("Erro na chamada Gemini:", error);
       if (error.status === "NOT_FOUND" || (error.message && error.message.includes("404"))) {
