@@ -43,7 +43,7 @@ const PromptGenerator = () => {
     try {
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: "gemini-3.1-pro-preview",
         contents: [{ parts: [{ text: prompt }] }],
         config: {
           systemInstruction: systemInstruction,

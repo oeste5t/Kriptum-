@@ -224,7 +224,7 @@ export function CaptionGenerator({ }: CaptionGeneratorProps) {
       
       const ai = new GoogleGenAI({ apiKey: process.env.GEMINI_API_KEY });
       const response = await ai.models.generateContent({
-        model: "gemini-flash-latest",
+        model: "gemini-3.1-pro-preview",
         contents: [
           {
             role: "user",
