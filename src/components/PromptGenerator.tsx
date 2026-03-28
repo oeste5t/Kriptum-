@@ -15,7 +15,6 @@ import {
   Zap,
   AlertTriangle
 } from 'lucide-react';
-import { GoogleGenAI } from "@google/genai";
 
 const PromptGenerator = () => {
   const [characters, setCharacters] = useState<any[]>([]);
@@ -37,45 +36,33 @@ const PromptGenerator = () => {
 
   const [error, setError] = useState<string | null>(null);
 
-  // Função de chamada à API usando SDK
+  // Função de chamada à API usando SDK no Backend
   const callGemini = async (prompt: string, systemInstruction: string, responseSchema?: any) => {
     setError(null);
     try {
-      const manualKey = localStorage.getItem('kriptum_manual_api_key');
-      const apiKey = manualKey || process.env.GEMINI_API_KEY;
-
-      if (!apiKey) {
-        throw new Error("Chave API não configurada. Por favor, configure no Perfil.");
-      }
-
-      const ai = new GoogleGenAI({ apiKey });
-      // Usando gemini-1.5-flash para máxima estabilidade e compatibilidade
-      const modelName = "gemini-1.5-flash"; 
-
-      const config: any = {
-        systemInstruction,
-        temperature: 0.7,
-        responseMimeType: responseSchema ? "application/json" : undefined,
-      };
-
-      const responsePromise = ai.models.generateContent({
-        model: modelName,
-        contents: [{ parts: [{ text: prompt }] }],
-        config
+      const response = await fetch('/api/generate/prompt', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          prompt,
+          systemInstruction,
+          responseSchema
+        })
       });
 
-      // Timeout de 30 segundos
-      const timeoutPromise = new Promise((_, reject) => 
-        setTimeout(() => reject(new Error("A IA demorou muito para responder. Tente novamente.")), 30000)
-      );
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro na resposta do servidor.");
+      }
 
-      const response: any = await Promise.race([responsePromise, timeoutPromise]);
+      const result = await response.json();
+      const responseText = result.text;
 
-      if (!response || !response.text) {
+      if (!responseText) {
         throw new Error("A IA não retornou uma resposta válida. Verifique sua chave API.");
       }
 
-      const rawText = response.text.trim();
+      const rawText = responseText.trim();
 
       if (responseSchema) {
         try {
@@ -90,9 +77,6 @@ const PromptGenerator = () => {
       return rawText;
     } catch (error: any) {
       console.error("Erro na chamada Gemini:", error);
-      if (error.status === "NOT_FOUND" || (error.message && error.message.includes("404"))) {
-        throw new Error("Modelo não encontrado ou Chave API inválida.");
-      }
       throw error;
     }
   };

@@ -1,6 +1,5 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
-import { GoogleGenAI } from "@google/genai";
 import { 
   Plus, 
   History, 
@@ -15,12 +14,11 @@ import {
 } from 'lucide-react';
 
 interface CaptionGeneratorProps {
-  hasProKey: boolean;
 }
 
 type View = 'generator' | 'history' | 'settings';
 
-export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
+export function CaptionGenerator({ }: CaptionGeneratorProps) {
   const [view, setView] = useState<View>('generator');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -38,8 +36,7 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
   const [settings, setSettings] = useState({
     handle: '@kriptum',
     ctaModel: 'follow',
-    autoSave: true,
-    useProModel: false
+    autoSave: true
   });
 
   const ctaModels: any = {
@@ -193,10 +190,6 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
 
   const handleGenerate = async () => {
     if (!videoFile) return;
-    if (!hasProKey) {
-      setError("A geração de legenda requer uma chave API configurada no seu Perfil.");
-      return;
-    }
     setLoading(true);
     setError(null);
     setGeneratedCaption(null);
@@ -226,85 +219,46 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
         "hashtags": "string"
       }`;
 
-      let modelName = settings.useProModel && hasProKey ? "gemini-1.5-pro" : "gemini-1.5-flash";
-      addLog(`Usando modelo: ${modelName}`);
+      addLog(`Enviando para o servidor...`);
       
-      const manualKey = localStorage.getItem('kriptum_manual_api_key');
-      const apiKey = manualKey || (process.env.GEMINI_API_KEY as string);
+      const response = await fetch('/api/generate/caption', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          image: base64Image,
+          systemPrompt,
+          userPrompt: "Analise este frame do vídeo e gere a legenda de elite em JSON seguindo as instruções do sistema."
+        })
+      });
 
-      if (!apiKey) {
-        throw new Error("Chave da IA não encontrada. Por favor, configure no perfil.");
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Erro na resposta do servidor.");
       }
 
-      const ai = new GoogleGenAI({ apiKey });
-      let response;
-      
-      try {
-        response = await ai.models.generateContent({
-          model: modelName,
-          contents: [
-            { 
-              role: "user",
-              parts: [
-                { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-                { text: "Analise este frame do vídeo e gere a legenda de elite em JSON seguindo as instruções do sistema." }
-              ] 
-            }
-          ],
-          config: {
-            systemInstruction: systemPrompt,
-            temperature: 0.7,
-            responseMimeType: "application/json"
-          }
-        });
-      } catch (firstErr: any) {
-        // Se o Pro falhar e estivermos usando ele, tenta o Flash como fallback
-        if (modelName === "gemini-1.5-pro") {
-          addLog("Modelo Pro falhou ou indisponível. Tentando Flash como fallback...");
-          modelName = "gemini-1.5-flash";
-          response = await ai.models.generateContent({
-            model: modelName,
-            contents: [
-              { 
-                role: "user",
-                parts: [
-                  { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-                  { text: "Analise este frame do vídeo e gere a legenda de elite em JSON seguindo as instruções do sistema." }
-                ] 
-              }
-            ],
-            config: {
-              systemInstruction: systemPrompt,
-              temperature: 0.7,
-              responseMimeType: "application/json"
-            }
-          });
-        } else {
-          throw firstErr;
-        }
-      }
+      const result = await response.json();
+      const responseText = result.text;
 
-      if (!response || !response.text) {
+      if (!responseText) {
         throw new Error("A IA não retornou uma resposta válida. Tente novamente.");
       }
 
-      addLog(`Resposta recebida (${response.text.length} caracteres)`);
-      addLog(`Modelo final utilizado: ${modelName}`);
+      addLog(`Resposta recebida (${responseText.length} caracteres)`);
 
       let data;
       try {
         addLog("Tentando processar JSON...");
-        data = JSON.parse(response.text.trim());
+        data = JSON.parse(responseText.trim());
       } catch (e) {
         addLog("JSON.parse falhou, tentando extração via regex...");
         // Fallback: tenta extrair JSON se o modelo retornar texto extra
-        const match = response.text.match(/\{[\s\S]*\}/);
+        const match = responseText.match(/\{[\s\S]*\}/);
         if (match) {
           addLog("JSON extraído via regex com sucesso");
           data = JSON.parse(match[0]);
         } else {
           addLog("Falha total na extração de JSON");
-          addLog("Texto bruto da IA: " + response.text.substring(0, 100) + "...");
+          addLog("Texto bruto da IA: " + responseText.substring(0, 100) + "...");
           throw new Error("Erro ao processar os dados da IA. Tente novamente.");
         }
       }
@@ -601,20 +555,6 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
                       className={`w-12 h-6 rounded-full transition-all relative ${settings.autoSave ? 'gradient-primary' : 'bg-slate-800'}`}
                     >
                       <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.autoSave ? 'right-1' : 'left-1'}`} />
-                    </button>
-                  </div>
-
-                  <div className="flex items-center justify-between opacity-50">
-                    <div className="space-y-0.5">
-                      <p className="text-sm font-bold text-white">Modelo Pro (Gemini 1.5 Pro)</p>
-                      <p className="text-xs text-slate-500 font-medium">Requer chave Pro ativa</p>
-                    </div>
-                    <button 
-                      disabled={!hasProKey}
-                      onClick={() => setSettings({...settings, useProModel: !settings.useProModel})}
-                      className={`w-12 h-6 rounded-full transition-all relative ${settings.useProModel ? 'gradient-primary' : 'bg-slate-800'}`}
-                    >
-                      <div className={`absolute top-1 w-4 h-4 bg-white rounded-full transition-all ${settings.useProModel ? 'right-1' : 'left-1'}`} />
                     </button>
                   </div>
 

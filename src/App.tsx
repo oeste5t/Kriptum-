@@ -554,7 +554,7 @@ export default function App() {
                       <ChevronRight size={16} className="rotate-180" />
                       Voltar às Ferramentas
                     </button>
-                    {activeTool === 'legenda' && <CaptionGenerator hasProKey={hasProKey} />}
+                    {activeTool === 'legenda' && <CaptionGenerator />}
                     {activeTool === 'prompt' && <PromptGenerator />}
                     {activeTool !== 'legenda' && activeTool !== 'prompt' && (
                       <div className="py-20 text-center space-y-4">

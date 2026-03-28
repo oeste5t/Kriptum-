@@ -63,6 +63,72 @@ async function startServer() {
     });
   });
 
+  // Rota de Geração de Legendas
+  app.post("/api/generate/caption", async (req, res) => {
+    try {
+      const { image, systemPrompt, userPrompt } = req.body;
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (!apiKey) {
+        return res.status(500).json({ error: "GEMINI_API_KEY não configurada no servidor." });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [
+          { 
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: "image/jpeg", data: image } },
+              { text: userPrompt }
+            ] 
+          }
+        ],
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.7,
+          responseMimeType: "application/json"
+        }
+      });
+
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("Erro na geração de legenda:", error);
+      res.status(500).json({ error: error.message || "Erro interno na geração de legenda." });
+    }
+  });
+
+  // Rota de Geração de Prompts
+  app.post("/api/generate/prompt", async (req, res) => {
+    try {
+      const { prompt, systemInstruction, responseSchema } = req.body;
+      const apiKey = process.env.GEMINI_API_KEY;
+
+      if (!apiKey) {
+        return res.status(500).json({ error: "GEMINI_API_KEY não configurada no servidor." });
+      }
+
+      const ai = new GoogleGenAI({ apiKey });
+      
+      const response = await ai.models.generateContent({
+        model: "gemini-1.5-flash",
+        contents: [{ parts: [{ text: prompt }] }],
+        config: {
+          systemInstruction,
+          temperature: 0.7,
+          responseMimeType: responseSchema ? "application/json" : undefined,
+        }
+      });
+
+      res.json({ text: response.text });
+    } catch (error: any) {
+      console.error("Erro na geração de prompt:", error);
+      res.status(500).json({ error: error.message || "Erro interno na geração de prompt." });
+    }
+  });
+
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
     const vite = await createViteServer({
       server: { middlewareMode: true },
