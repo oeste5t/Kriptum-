@@ -92,8 +92,11 @@ type ToolId = 'none' | 'legenda' | 'prompt' | 'imagem' | 'video';
 function KriptumLogo({ size = 24, className = "", rounded = "rounded-2xl" }: { size?: number, className?: string, rounded?: string }) {
   const [errorCount, setErrorCount] = useState(0);
   
-  // Attempt order: PNG -> SVG -> Fallback 'K'
-  const sources = ["/icon-192.png", "/icon-192.svg"];
+  // Links permanentes do Google Drive (convertidos para visualização direta)
+  const sources = [
+    "https://lh3.googleusercontent.com/d/1KBVLMDLglIccdlv-t_OKKN6pJaGryZYt",
+    "https://lh3.googleusercontent.com/d/1iwNYDJZHKk5sC1XuJyEIMEpn0B6anm1o"
+  ];
   const currentSource = errorCount < sources.length ? sources[errorCount] : null;
 
   return (
