@@ -13,6 +13,7 @@ export default async function handler(req: any, res: any) {
       return res.status(500).json({ error: "GEMINI_API_KEY não configurada no servidor." });
     }
 
+    console.log(`[Vercel API] Iniciando geração com modelo: gemini-1.5-flash`);
     const ai = new GoogleGenAI({ apiKey });
     
     let contents;

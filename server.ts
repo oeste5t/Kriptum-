@@ -74,6 +74,7 @@ async function startServer() {
         return res.status(500).json({ error: "GEMINI_API_KEY não configurada no servidor." });
       }
 
+      console.log(`[Server] Iniciando geração com modelo: gemini-1.5-flash`);
       const ai = new GoogleGenAI({ apiKey });
       
       let contents;
