@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { GoogleGenAI } from "@google/genai";
 import { 
   Plus, 
   History, 
@@ -211,53 +212,34 @@ export function CaptionGenerator({ hasProKey }: CaptionGeneratorProps) {
       const modelName = settings.useProModel && hasProKey ? "gemini-3.1-pro-preview" : "gemini-3-flash-preview";
       addLog(`Usando modelo: ${modelName}`);
       
-      const headers: any = { "Content-Type": "application/json" };
       const manualKey = localStorage.getItem('kriptum_manual_api_key');
-      if (manualKey) headers['x-gemini-key'] = manualKey;
+      const apiKey = manualKey || (process.env.GEMINI_API_KEY as string);
 
-      const apiPath = "/api/ai/generate";
-      addLog(`Chamando API: ${apiPath}`);
-      const response = await fetch(apiPath, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: modelName,
-          contents: [
-            { 
-              role: "user",
-              parts: [
-                { inlineData: { mimeType: "image/jpeg", data: base64Image } },
-                { text: "Crie uma legenda de elite para este vídeo baseado nesta imagem capturada dele." }
-              ] 
-            }
-          ],
-          systemInstruction: {
-            parts: [{ text: systemPrompt }]
-          },
-          config: {
-            temperature: 0.7,
-            topP: 0.95,
-            topK: 40
-          }
-        })
-      });
-
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const errData = await response.json();
-          throw new Error(errData.error || "Erro na ponte de segurança da IA.");
-        } else {
-          const textError = await response.text();
-          console.error("Resposta não-JSON do servidor:", textError);
-          // Extrai o início da mensagem para o usuário
-          const shortError = textError.substring(0, 100).replace(/<[^>]*>?/gm, '');
-          throw new Error(`Erro do servidor (${response.status}): ${shortError}...`);
-        }
+      if (!apiKey) {
+        throw new Error("Chave da IA não encontrada. Por favor, configure no perfil.");
       }
 
-      const responseData = await response.json();
-      const rawText = responseData.candidates?.[0]?.content?.parts?.[0]?.text || "";
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: modelName,
+        contents: [
+          { 
+            role: "user",
+            parts: [
+              { inlineData: { mimeType: "image/jpeg", data: base64Image } },
+              { text: "Crie uma legenda de elite para este vídeo baseado nesta imagem capturada dele." }
+            ] 
+          }
+        ],
+        config: {
+          systemInstruction: systemPrompt,
+          temperature: 0.7,
+          topP: 0.95,
+          topK: 40
+        }
+      });
+
+      const rawText = response.text || "";
       addLog("Resposta recebida da IA");
       const lines = rawText.split('\n').filter(l => l.trim() !== "");
       

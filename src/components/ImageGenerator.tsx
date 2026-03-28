@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { motion } from 'motion/react';
+import { GoogleGenAI } from "@google/genai";
 import { Image as LucideImageIcon, Download, Loader2, Sparkles, Wand2, X, AlertTriangle } from 'lucide-react';
 
 interface Props {
@@ -19,46 +20,31 @@ export function ImageGenerator({ hasProKey }: Props) {
     setError(null);
     
     try {
-      const headers: any = { "Content-Type": "application/json" };
       const manualKey = localStorage.getItem('kriptum_manual_api_key');
-      if (manualKey) headers['x-gemini-key'] = manualKey;
+      const apiKey = manualKey || (process.env.GEMINI_API_KEY as string);
 
-      const apiPath = "/api/ai/generate";
-      const response = await fetch(apiPath, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: 'gemini-2.5-flash-image',
-          contents: [
-            {
-              role: 'user',
-              parts: [
-                {
-                  text: `Gere uma imagem de alta qualidade baseada no seguinte prompt: ${prompt}. Estilo: Cinematográfico, detalhado, 4k.`,
-                },
-              ],
-            }
-          ]
-        })
-      });
-
-      if (!response.ok) {
-        const contentType = response.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const errData = await response.json();
-          throw new Error(errData.error || "Erro na ponte de segurança da IA.");
-        } else {
-          const textError = await response.text();
-          const shortError = textError.substring(0, 100).replace(/<[^>]*>?/gm, '');
-          throw new Error(`Erro do servidor (${response.status}): ${shortError}...`);
-        }
+      if (!apiKey) {
+        throw new Error("Chave da IA não encontrada. Por favor, configure no perfil.");
       }
 
-      const responseData = await response.json();
-      
+      const ai = new GoogleGenAI({ apiKey });
+      const response = await ai.models.generateContent({
+        model: 'gemini-2.5-flash-image',
+        contents: [
+          {
+            role: 'user',
+            parts: [
+              {
+                text: `Gere uma imagem de alta qualidade baseada no seguinte prompt: ${prompt}. Estilo: Cinematográfico, detalhado, 4k.`,
+              },
+            ],
+          }
+        ]
+      });
+
       let foundImage = false;
-      if (responseData.candidates && responseData.candidates[0].content.parts) {
-        for (const part of responseData.candidates[0].content.parts) {
+      if (response.candidates && response.candidates[0].content.parts) {
+        for (const part of response.candidates[0].content.parts) {
           if (part.inlineData) {
             const base64Data = part.inlineData.data;
             setGeneratedImage(`data:image/png;base64,${base64Data}`);

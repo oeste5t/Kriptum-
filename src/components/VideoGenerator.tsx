@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'motion/react';
+import { GoogleGenAI } from "@google/genai";
 import { 
   Video, 
   History, 
@@ -69,6 +70,13 @@ export function VideoGenerator({ hasProKey }: VideoGeneratorProps) {
     setStatusMessage("Iniciando Veo 3.1...");
 
     try {
+      const manualKey = localStorage.getItem('kriptum_manual_api_key');
+      const apiKey = manualKey || (process.env.GEMINI_API_KEY as string);
+
+      if (!apiKey) {
+        throw new Error("Chave da IA não encontrada. Por favor, configure no perfil.");
+      }
+
       let imagePayload = undefined;
       if (imageFile) {
         const reader = new FileReader();
@@ -84,64 +92,38 @@ export function VideoGenerator({ hasProKey }: VideoGeneratorProps) {
       }
 
       setStatusMessage("Enviando prompt para o Veo...");
-      const headers: any = { "Content-Type": "application/json" };
-      const manualKey = localStorage.getItem('kriptum_manual_api_key');
-      if (manualKey) headers['x-gemini-key'] = manualKey;
-
-      const apiPath = "/api/ai/generate-video";
-      const genResponse = await fetch(apiPath, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          model: 'veo-3.1-fast-generate-preview',
-          prompt: prompt,
-          image: imagePayload,
-          config: {
-            numberOfVideos: 1,
-            resolution: settings.resolution,
-            aspectRatio: settings.aspectRatio
-          }
-        })
+      const ai = new GoogleGenAI({ apiKey });
+      let operation = await ai.models.generateVideos({
+        model: 'veo-3.1-fast-generate-preview',
+        prompt: prompt,
+        image: imagePayload,
+        config: {
+          numberOfVideos: 1,
+          resolution: settings.resolution as any,
+          aspectRatio: settings.aspectRatio as any
+        }
       });
 
-      if (!genResponse.ok) {
-        const contentType = genResponse.headers.get("content-type");
-        if (contentType && contentType.includes("application/json")) {
-          const errData = await genResponse.json();
-          throw new Error(errData.error || "Erro na ponte de vídeo.");
-        } else {
-          const textError = await genResponse.text();
-          const shortError = textError.substring(0, 100).replace(/<[^>]*>?/gm, '');
-          throw new Error(`Erro do servidor (${genResponse.status}): ${shortError}...`);
-        }
-      }
-
-      const { operationId } = await genResponse.json();
       setStatusMessage("Processando vídeo (pode levar alguns minutos)...");
       
-      let isDone = false;
-      let downloadLink = null;
-
-      while (!isDone) {
+      while (!operation.done) {
         await new Promise(resolve => setTimeout(resolve, 10000));
         setStatusMessage("Ainda processando... Quase lá!");
-        
-        const statusRes = await fetch(`/api/ai/video-status/${operationId}`);
-        if (!statusRes.ok) throw new Error("Erro ao verificar status do vídeo.");
-        
-        const operation = await statusRes.json();
-        isDone = operation.done;
-        if (isDone) {
-          downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
-        }
+        operation = await ai.operations.getVideosOperation({ operation: operation as any });
       }
 
+      const downloadLink = operation.response?.generatedVideos?.[0]?.video?.uri;
       if (!downloadLink) throw new Error("Falha ao obter o link do vídeo.");
 
       setStatusMessage("Finalizando download...");
-      const videoResponse = await fetch(`/api/ai/video-download?url=${encodeURIComponent(downloadLink)}`);
+      const videoResponse = await fetch(downloadLink, {
+        method: 'GET',
+        headers: {
+          'x-goog-api-key': apiKey,
+        },
+      });
       
-      if (!videoResponse.ok) throw new Error("Falha ao baixar vídeo através do servidor.");
+      if (!videoResponse.ok) throw new Error("Falha ao baixar vídeo diretamente.");
 
       const blob = await videoResponse.blob();
       const videoUrl = URL.createObjectURL(blob);
