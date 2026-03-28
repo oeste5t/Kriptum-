@@ -945,7 +945,6 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onOpenKey
   }, [manualApiKey]);
 
   const checkStatus = async () => {
-    if (userRole !== 'admin') return;
     try {
       const headers: any = { "Content-Type": "application/json" };
       const savedKey = localStorage.getItem('kriptum_manual_api_key');
@@ -968,7 +967,7 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onOpenKey
     const handleUpdate = () => checkStatus();
     window.addEventListener('kriptum_key_updated', handleUpdate);
     return () => window.removeEventListener('kriptum_key_updated', handleUpdate);
-  }, [userRole]);
+  }, [userRole, manualApiKey]);
 
   const handleSave = async () => {
     if (!tempKey || tempKey.trim().length < 20) {
@@ -1066,11 +1065,11 @@ function SettingsView({ user, userRole, manualApiKey, onSaveManualKey, onOpenKey
 
             <div className="flex items-center justify-between p-3 bg-[#0a0a0a] rounded-xl border border-white/5">
               <div className="flex items-center gap-2">
-                <div className={`w-2 h-2 rounded-full ${systemStatus?.apiKeyConfigured ? 'bg-green-500' : 'bg-red-500'}`} />
+                <div className={`w-2 h-2 rounded-full ${(systemStatus?.apiKeyConfigured || (manualApiKey && manualApiKey.length > 20)) ? 'bg-green-500' : 'bg-red-500'}`} />
                 <span className="text-xs font-bold text-slate-500 uppercase tracking-wider">Motor IA</span>
               </div>
-              <span className={`text-xs font-bold uppercase tracking-wider ${systemStatus?.apiKeyConfigured ? 'text-green-400' : 'text-red-400'}`}>
-                {systemStatus?.apiKeyConfigured ? 'Operacional' : 'Offline'}
+              <span className={`text-xs font-bold uppercase tracking-wider ${(systemStatus?.apiKeyConfigured || (manualApiKey && manualApiKey.length > 20)) ? 'text-green-400' : 'text-red-400'}`}>
+                {(systemStatus?.apiKeyConfigured || (manualApiKey && manualApiKey.length > 20)) ? 'Operacional' : 'Offline'}
               </span>
             </div>
           </div>
