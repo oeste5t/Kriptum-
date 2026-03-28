@@ -64,13 +64,14 @@ async function startServer() {
   });
 
   // Rota de Geração de Legendas
-  app.post("/api/generate/caption", async (req, res) => {
+  app.post(["/api/generate/caption", "/api/generate/caption/"], async (req, res) => {
     try {
       const { image, systemPrompt, userPrompt } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
 
       if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY não configurada no servidor." });
+        console.error("[Server] Erro: GEMINI_API_KEY ou API_KEY não configurada.");
+        return res.status(500).json({ error: "Chave API não configurada no servidor. Verifique as configurações." });
       }
 
       const ai = new GoogleGenAI({ apiKey });
@@ -93,6 +94,10 @@ async function startServer() {
         }
       });
 
+      if (!response.text) {
+        throw new Error("Resposta vazia da IA.");
+      }
+
       res.json({ text: response.text });
     } catch (error: any) {
       console.error("Erro na geração de legenda:", error);
@@ -101,13 +106,14 @@ async function startServer() {
   });
 
   // Rota de Geração de Prompts
-  app.post("/api/generate/prompt", async (req, res) => {
+  app.post(["/api/generate/prompt", "/api/generate/prompt/"], async (req, res) => {
     try {
       const { prompt, systemInstruction, responseSchema } = req.body;
-      const apiKey = process.env.GEMINI_API_KEY;
+      const apiKey = process.env.GEMINI_API_KEY || process.env.API_KEY;
 
       if (!apiKey) {
-        return res.status(500).json({ error: "GEMINI_API_KEY não configurada no servidor." });
+        console.error("[Server] Erro: GEMINI_API_KEY ou API_KEY não configurada.");
+        return res.status(500).json({ error: "Chave API não configurada no servidor. Verifique as configurações." });
       }
 
       const ai = new GoogleGenAI({ apiKey });
@@ -122,11 +128,21 @@ async function startServer() {
         }
       });
 
+      if (!response.text) {
+        throw new Error("Resposta vazia da IA.");
+      }
+
       res.json({ text: response.text });
     } catch (error: any) {
       console.error("Erro na geração de prompt:", error);
       res.status(500).json({ error: error.message || "Erro interno na geração de prompt." });
     }
+  });
+
+  // Catch-all para rotas de API não encontradas
+  app.all("/api/*", (req, res) => {
+    console.warn(`[Server] Rota de API não encontrada: ${req.method} ${req.url}`);
+    res.status(404).json({ error: `Rota de API não encontrada: ${req.method} ${req.url}` });
   });
 
   if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
