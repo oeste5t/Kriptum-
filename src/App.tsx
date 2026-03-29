@@ -157,15 +157,15 @@ export default function App() {
               displayName: currentUser.displayName,
               email: currentUser.email,
               photoURL: currentUser.photoURL,
-              role: currentUser.email === 'perigoreal00@gmail.com' ? 'admin' : 'user',
+              role: (currentUser.email === 'perigoreal00@gmail.com' || currentUser.email === 'Pedrotiagorodrygues@gmail.com') ? 'admin' : 'user',
               createdAt: serverTimestamp()
             };
             await setDoc(userRef, newUser);
             setUserRole(newUser.role as any);
           } else {
             const currentRole = userSnap.data().role;
-            // Garantia de Admin para o seu email
-            if (currentUser.email === 'perigoreal00@gmail.com' && currentRole !== 'admin') {
+            // Garantia de Admin para os emails autorizados
+            if ((currentUser.email === 'perigoreal00@gmail.com' || currentUser.email === 'Pedrotiagorodrygues@gmail.com') && currentRole !== 'admin') {
               await setDoc(userRef, { role: 'admin' }, { merge: true });
               setUserRole('admin');
             } else {
